@@ -1,3 +1,4 @@
+import { decompress as zstdDecompress } from "fzstd";
 import { closeSync, existsSync, openSync, readFileSync, readSync, readdirSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import type { Profile } from "./profiles.js";
@@ -34,10 +35,24 @@ const ts = (v: unknown): number => {
 const str = (v: unknown): string => (typeof v === "string" ? v : "");
 const rec = (v: unknown): Record<string, unknown> => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 
+/** Codex compresses older sessions with zstd; decode them in pure JS (cached by size and mtime). */
+const zstCache = new Map<string, { key: string; text: string }>();
+function readText(path: string): string {
+  if (!path.endsWith(".zst")) return readFileSync(path, "utf8");
+  const st = statSync(path);
+  const key = `${st.size}:${st.mtimeMs}`;
+  const hit = zstCache.get(path);
+  if (hit && hit.key === key) return hit.text;
+  const text = new TextDecoder().decode(zstdDecompress(new Uint8Array(readFileSync(path))));
+  if (zstCache.size > 64) zstCache.clear();
+  zstCache.set(path, { key, text });
+  return text;
+}
+
 function jsonLines(path: string): Record<string, unknown>[] {
   const out: Record<string, unknown>[] = [];
   let text: string;
-  try { text = readFileSync(path, "utf8"); } catch { return out; }
+  try { text = readText(path); } catch { return out; }
   for (const line of text.split("\n")) {
     const t = line.trim();
     if (!t) continue;
@@ -142,11 +157,14 @@ function walk(dir: string, match: (f: string) => boolean, out: string[] = [], de
 function codexFile(profile: Profile, worktree: string): { file: string | null; compressed: number } {
   const root = join(profile.configDir, "sessions");
   const all = walk(root, (n) => n.startsWith("rollout-"));
-  const plain = newestFirst(all.filter((f) => f.endsWith(".jsonl")));
+  const plain = newestFirst(all.filter((f) => f.endsWith(".jsonl") || f.endsWith(".jsonl.zst")));
   const want = norm(worktree);
   for (const f of plain.slice(0, 80)) {
     let meta: Record<string, unknown> = {};
-    try { meta = rec(JSON.parse(firstLine(f) || "{}")); } catch { continue; }
+    try {
+      const head = f.endsWith(".zst") ? readText(f).split("\n", 1)[0] : firstLine(f);
+      meta = rec(JSON.parse(head || "{}"));
+    } catch { continue; }
     const cwd = str(rec(meta.payload).cwd);
     if (meta.type === "session_meta" && cwd && norm(cwd) === want) return { file: f, compressed: 0 };
   }
