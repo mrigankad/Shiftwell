@@ -41,6 +41,8 @@ export const api = {
   handOff: (runId: string, toProfileId: string, reason?: string) => post<{ run: Run; note: string }>(`/api/runs/${runId}/handoff`, { toProfileId, reason }),
   finishRun: (runId: string) => post<Run>(`/api/runs/${runId}/finish`, {}),
   openRun: (runId: string) => post<{ ok: true }>(`/api/runs/${runId}/open`, {}),
+  note: (runId: string) => fetch(`/api/runs/${runId}/note`).then(json<{ note: string }>),
+  history: (profileId: string) => fetch(`/api/profiles/${profileId}/history`).then(json<NonNullable<Account["usage"]["latest"]>[]>),
   openLogin: (id: string) => fetch(`/api/profiles/${id}/login`, { method: "POST" }).then(json<{ command: string }>),
 };
 

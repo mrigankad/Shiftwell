@@ -113,6 +113,8 @@ export function handOff(runId: string, toProfileId: string, reason?: string): { 
   update(run.id, { status: "handed-off", endedAt: now });
   const next: Run = { ...run, id: randomUUID().slice(0, 8), profileId: to.id, startedAt: now, status: "active", fromRunId: run.id, endedAt: undefined };
   save([...listRuns(), next]);
+  // The worktree copy is replaced by the next handoff, so keep every note here too.
+  writeFileSync(join(sub("handoffs"), `${next.id}.md`), note);
   return { run: next, note };
 }
 
@@ -121,4 +123,10 @@ export function finishRun(runId: string): Run {
   if (!run) throw new Error("Unknown run");
   update(run.id, { status: "done", endedAt: new Date().toISOString() });
   return getRun(run.id)!;
+}
+
+/** The handoff note that started this run, if it was picked up from another account. */
+export function readHandoffNote(runId: string): string | null {
+  const f = join(sub("handoffs"), `${runId}.md`);
+  return existsSync(f) ? readFileSync(f, "utf8") : null;
 }

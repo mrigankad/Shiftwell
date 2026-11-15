@@ -3,7 +3,7 @@ import { mkdtempSync, writeFileSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
-import { createProfile, startRun, handOff, finishRun, listRuns, agentCommand } from "../src/index.js";
+import { createProfile, startRun, handOff, finishRun, listRuns, agentCommand, readHandoffNote } from "../src/index.js";
 
 let repo: string;
 const git = (...a: string[]) => execFileSync("git", a, { cwd: repo, encoding: "utf8" });
@@ -29,6 +29,8 @@ describe("runs", () => {
     expect(next).toMatchObject({ profileId: b.id, worktree: run.worktree, fromRunId: run.id, status: "active" });
     expect(listRuns().find((r) => r.id === run.id)?.status).toBe("handed-off");
     expect(() => handOff(run.id, b.id)).toThrow("not active");
+    expect(readHandoffNote(next.id)).toBe(note);
+    expect(readHandoffNote(run.id)).toBeNull();
     expect(finishRun(next.id).status).toBe("done");
   });
   it("rejects bad input", () => {

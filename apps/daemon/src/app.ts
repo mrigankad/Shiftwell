@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   listProfiles, createProfile, removeProfile, getProfile, envFor, loginCommand,
   installClaudeStatusHook, installGeminiTelemetry, usageFor, suggestHandoffs, type Provider, type Usage,
-  listRuns, startRun, handOff, finishRun, agentCommand, HANDOFF_PROMPT,
+  listRuns, startRun, handOff, finishRun, agentCommand, HANDOFF_PROMPT, readHandoffNote, readSamples,
 } from "@shiftwell/core";
 
 const PROVIDERS: Provider[] = ["claude", "codex", "gemini", "api"];
@@ -72,6 +72,16 @@ export function buildApp(opts: { openTerminal?: typeof openLoginTerminal } = {})
   const fail = (reply: any, e: unknown) => reply.code(400).send({ error: (e as Error).message });
 
   app.get("/api/runs", async () => listRuns());
+
+  app.get<{ Params: { id: string } }>("/api/runs/:id/note", async (req, reply) => {
+    const note = readHandoffNote(req.params.id);
+    return note === null ? reply.code(404).send({ error: "This run did not start from a handoff" }) : { note };
+  });
+
+  app.get<{ Params: { id: string } }>("/api/profiles/:id/history", async (req, reply) => {
+    if (!getProfile(req.params.id)) return reply.code(404).send({ error: "not found" });
+    return readSamples(req.params.id, 300);
+  });
 
   app.post<{ Body: { profileId?: string; repo?: string; task?: string } }>("/api/runs", async (req, reply) => {
     try {
