@@ -119,7 +119,7 @@ function HandOffMenu({ run, ctx }: { run: Run; ctx: PageCtx }) {
           {targets.map((a) => (
             <button role="menuitem" type="button" key={a.id} onClick={() => { setOpen(false); ctx.handOff(run, a.id); }}
               className="flex min-h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface">
-              <CrewAvatar provider={a.provider} preset={a.api?.preset} size={24} state={a.usage.state} />
+              <CrewAvatar provider={a.provider} preset={a.api?.preset} accountId={a.id} size={24} state={a.usage.state} />
               <span className="flex-1 font-bold">{a.name}</span>
               <span className="text-xs text-muted">{STATE_PILL[a.usage.state].label}</span>
             </button>
@@ -160,7 +160,7 @@ export function LiveViewPage({ runId, ctx }: { runId: string; ctx: PageCtx }) {
         <button type="button" onClick={() => ctx.go("runs")} className="w-fit cursor-pointer text-sm text-body hover:text-ink">Runs · {run.branch}</button>
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <div className="flex min-w-0 items-center gap-3">
-            <CrewAvatar provider={ctx.providerOf(run.profileId)} preset={ctx.presetOf(run.profileId)} size={36} />
+            <CrewAvatar provider={ctx.providerOf(run.profileId)} preset={ctx.presetOf(run.profileId)} accountId={run.profileId} size={36} />
             <div className="flex min-w-0 flex-col">
               <h1 className="line-clamp-2 text-[22px] font-bold tracking-[-0.03em] sm:text-[28px]">{run.task}</h1>
               <span className="text-xs text-muted [overflow-wrap:anywhere]">{ctx.nameOf(run.profileId)} · {run.branch} · last activity {agoMs(live.lastActivityAt, now)}</span>

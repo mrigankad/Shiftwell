@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { Tooltip } from "../../components/ui/Tooltip";
 export { Switch } from "../../components/ui/Switch";
 
 /** Number stepper. Minus and plus buttons, plus Arrow keys, Home and End on the value itself. */
@@ -15,16 +16,18 @@ export function Stepper({ value, onChange, min, max, step = 1, label, suffix = "
   const btn = "flex size-10 cursor-pointer items-center justify-center rounded-lg border border-line bg-card text-lg sm:size-9 font-bold hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-action";
   return (
     <div role="group" aria-label={label} className="flex items-center gap-2">
-      <button type="button" aria-label={`Lower ${label}`} disabled={value <= min} onClick={() => set(value - step)} className={btn}>
+      <Tooltip label={`Lower ${label}`}><button type="button" aria-label={`Lower ${label}`} disabled={value <= min} onClick={() => set(value - step)} className={btn}>
         <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 6h8" /></svg>
-      </button>
+      </button></Tooltip>
       <div role="spinbutton" tabIndex={0} aria-label={label} aria-valuenow={value} aria-valuemin={min} aria-valuemax={max} aria-valuetext={`${value}${suffix}`} onKeyDown={onKey}
         className="flex h-10 min-w-16 sm:h-9 items-center justify-center rounded-lg bg-surface px-3 text-ui font-bold tabular-nums focus-visible:outline-2 focus-visible:outline-action">
         {value}{suffix}
       </div>
+      <Tooltip label={`Raise ${label}`}>
       <button type="button" aria-label={`Raise ${label}`} disabled={value >= max} onClick={() => set(value + step)} className={btn}>
         <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M2 6h8M6 2v8" /></svg>
       </button>
+      </Tooltip>
     </div>
   );
 }

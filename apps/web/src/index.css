@@ -95,15 +95,19 @@
 
 body { @apply bg-page text-ink font-sans antialiased; }
 
-/* Scrollbars: thin, themed, and in the brand orange. */
+/* Scrollbars: overlay style. Thin, and the thumb is invisible until the area is hovered, focused or
+   scrolled, so nothing flickers at rest. The track width is constant, so showing the thumb never shifts layout.
+   Inner areas use a neutral thumb; the main content area keeps the brand orange, faint at rest. */
 @layer base {
-  :root { --scrollbar-thumb: color-mix(in srgb, var(--color-shift) 55%, transparent); --scrollbar-thumb-hover: var(--color-shift); }
-  * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
-  *::-webkit-scrollbar { width: 10px; height: 10px; }
-  *::-webkit-scrollbar-track { background: transparent; }
-  *::-webkit-scrollbar-thumb { background-color: var(--scrollbar-thumb); border-radius: 999px; border: 3px solid transparent; background-clip: padding-box; }
-  *::-webkit-scrollbar-thumb:hover { background-color: var(--scrollbar-thumb-hover); }
-  *::-webkit-scrollbar-corner { background: transparent; }
+  :root {
+    --sb-neutral: color-mix(in srgb, var(--color-muted) 55%, transparent);
+    --sb-orange-rest: color-mix(in srgb, var(--color-shift) 26%, transparent);
+    --sb-orange: color-mix(in srgb, var(--color-shift) 85%, transparent);
+  }
+  * { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+  *:hover, *:focus-within, [data-scrolling] { scrollbar-color: var(--sb-neutral) transparent; }
+  .sw-main { scrollbar-color: var(--sb-orange-rest) transparent; scrollbar-gutter: stable; }
+  .sw-main:hover, .sw-main[data-scrolling] { scrollbar-color: var(--sb-orange) transparent; }
   html { scroll-behavior: smooth; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 }
@@ -111,6 +115,9 @@ body { @apply bg-page text-ink font-sans antialiased; }
 /* One focus ring for every interactive element. */
 @layer base {
   :focus-visible { outline: 2px solid var(--color-action); outline-offset: 2px; }
+  /* Pressable things share one feel: a quick colour change and a small press. */
+  button:not(:disabled), [role="button"], [role="option"], a[href] { transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease, opacity 160ms ease, transform 120ms ease; }
+  button:not(:disabled):active { transform: scale(0.98); }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0ms !important; animation-iteration-count: 1 !important; transition-duration: 0ms !important; }
   }
@@ -120,3 +127,14 @@ body { @apply bg-page text-ink font-sans antialiased; }
 .sw-toast-in { animation: sw-toast-in 160ms ease-out; }
 @keyframes sw-live { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 .sw-live { animation: sw-live 2.4s ease-in-out infinite; }
+
+/* Skeleton shimmer: a soft highlight sweeping across a placeholder. */
+@keyframes sw-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.sw-shimmer {
+  background-color: var(--color-track);
+  background-image: linear-gradient(100deg, transparent 30%, color-mix(in srgb, var(--color-card) 70%, transparent) 50%, transparent 70%);
+  background-size: 200% 100%;
+  animation: sw-shimmer 1.6s linear infinite;
+}
+@keyframes sw-pop { from { opacity: 0; transform: translateY(2px) scale(0.98); } to { opacity: 1; transform: none; } }
+.sw-pop { animation: sw-pop 140ms ease-out; }

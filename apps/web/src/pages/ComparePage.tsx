@@ -44,7 +44,7 @@ export function ComparePage({ ctx, groupId }: { ctx: PageCtx; groupId: string })
             return (
               <section key={r.id} className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-card p-4">
                 <div className="flex items-center gap-3">
-                  <CrewAvatar provider={ctx.providerOf(r.profileId)} preset={ctx.presetOf(r.profileId)} size={36} />
+                  <CrewAvatar provider={ctx.providerOf(r.profileId)} preset={ctx.presetOf(r.profileId)} accountId={r.profileId} size={36} />
                   <div className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate text-ui font-bold">{ctx.nameOf(r.profileId)}</span>
                     <span className="truncate text-xs text-muted">{r.branch} · {ago(r.startedAt)}</span>

@@ -46,7 +46,9 @@ type NoteState =
 
 export function HandoffsPage({ ctx }: { ctx: PageCtx }) {
   const list = ctx.runs.filter((r) => r.fromRunId).sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt));
-  const [selected, setSelected] = useState<string | null>(null);
+  const [picked, setSelected] = useState<string | null>(null);
+  // The newest handoff opens by default so the note panel is never an empty box.
+  const selected = picked ?? list[0]?.id ?? null;
   const [note, setNote] = useState<NoteState | null>(null);
   const [attempt, setAttempt] = useState(0);
 
@@ -79,10 +81,10 @@ export function HandoffsPage({ ctx }: { ctx: PageCtx }) {
                 <button key={r.id} role="option" aria-selected={on} onClick={() => setSelected(r.id)}
                   className={`flex w-full cursor-pointer flex-col gap-2 border-b border-row px-4 py-3 text-left last:border-b-0 ${on ? "bg-pick" : "hover:bg-surface"}`}>
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <CrewAvatar provider={from ? ctx.providerOf(from.profileId) : "api"} preset={from ? ctx.presetOf(from.profileId) : undefined} size={28} />
+                    <CrewAvatar provider={from ? ctx.providerOf(from.profileId) : "api"} preset={from ? ctx.presetOf(from.profileId) : undefined} accountId={from?.profileId} size={28} />
                     <span className="min-w-0 max-w-[40%] truncate text-sm font-bold">{from ? ctx.nameOf(from.profileId) : "Removed account"}</span>
                     <span className="text-sm text-muted">→</span>
-                    <CrewAvatar provider={ctx.providerOf(r.profileId)} preset={ctx.presetOf(r.profileId)} size={28} />
+                    <CrewAvatar provider={ctx.providerOf(r.profileId)} preset={ctx.presetOf(r.profileId)} accountId={r.profileId} size={28} />
                     <span className="min-w-0 max-w-[40%] truncate text-sm font-bold">{ctx.nameOf(r.profileId)}</span>
                     <span className="hidden flex-1 sm:block" />
                     <span className="shrink-0 text-xs text-muted">{ago(r.startedAt)}</span>

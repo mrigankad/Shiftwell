@@ -60,12 +60,12 @@ export function Skeleton({ rows = 3, label = "Loading" }: { rows?: number; label
     <div role="status" aria-live="polite" aria-label={label} className="overflow-hidden rounded-card border border-line">
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="flex items-center gap-4 border-b border-row px-4 py-3.5 last:border-b-0">
-          <div className="size-8 shrink-0 animate-pulse rounded-lg bg-track" />
+          <div className="size-8 shrink-0 sw-shimmer rounded-lg" />
           <div className="flex flex-1 flex-col gap-2">
-            <div className="h-3 animate-pulse rounded-full bg-track" style={{ width: `${55 - (i % 3) * 12}%` }} />
-            <div className="h-2.5 animate-pulse rounded-full bg-row" style={{ width: `${35 + (i % 2) * 15}%` }} />
+            <div className="h-3 sw-shimmer rounded-full" style={{ width: `${55 - (i % 3) * 12}%` }} />
+            <div className="h-2.5 sw-shimmer rounded-full opacity-60" style={{ width: `${35 + (i % 2) * 15}%` }} />
           </div>
-          <div className="h-5 w-16 shrink-0 animate-pulse rounded-full bg-track" />
+          <div className="h-5 w-16 shrink-0 sw-shimmer rounded-full" />
         </div>
       ))}
       <span className="sr-only">{label}</span>

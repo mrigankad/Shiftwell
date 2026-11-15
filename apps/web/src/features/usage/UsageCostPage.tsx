@@ -56,7 +56,7 @@ function AccountRow({ a, cost, onCost }: { a: AccountWeek; cost: CostMap[string]
   return (
     <li className="grid min-w-0 grid-cols-1 gap-4 border-b border-row py-5 last:border-b-0 md:grid-cols-2 md:items-center md:gap-x-8 2xl:grid-cols-[minmax(0,1.1fr)_auto_minmax(0,1fr)_minmax(0,1.2fr)]">
       <div className="flex min-w-0 items-center gap-3">
-        <CrewAvatar provider={a.provider} preset={a.preset} size={40} />
+        <CrewAvatar provider={a.provider} preset={a.preset} accountId={a.id} size={40} />
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-ui font-bold">{a.name}</span>
           <span className="truncate text-meta text-body">{a.plan || (a.provider === "api" ? "API key" : "No plan noted")}</span>

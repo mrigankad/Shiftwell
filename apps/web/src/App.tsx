@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { RoutingRulesPage } from "./features/rules/RoutingRulesPage";
 import { GuardrailsPage } from "./features/guardrails/GuardrailsPage";
 import { ResetCalendarPage } from "./features/resets/ResetCalendarPage";
@@ -19,6 +19,10 @@ import { FinishRunDialog } from "./FinishRunDialog";
 import { AccountsPage } from "./pages/AccountsPage";
 import { NowContext, useTicker } from "./lib/time";
 import type { PageCtx } from "./pages/shared";
+import { showActionToast } from "./features/character/actionToast";
+import { Tooltip } from "./components/ui/Tooltip";
+import { ShortcutsDialog } from "./features/shortcuts/ShortcutsDialog";
+import { useShortcuts } from "./features/shortcuts/useShortcuts";
 
 // Heavier or rarely opened pages load on demand.
 const WorkerDetailPage = lazy(() => import("./features/worker/WorkerDetailPage").then((m) => ({ default: m.WorkerDetailPage })));
@@ -28,6 +32,7 @@ const InsightsPage = lazy(() => import("./pages/InsightsPage").then((m) => ({ de
 const UsageCostPage = lazy(() => import("./features/usage/UsageCostPage").then((m) => ({ default: m.UsageCostPage })));
 const WeeklyRecapPage = lazy(() => import("./features/recap/WeeklyRecapPage").then((m) => ({ default: m.WeeklyRecapPage })));
 const SkillLibraryPage = lazy(() => import("./features/skills/SkillLibraryPage").then((m) => ({ default: m.SkillLibraryPage })));
+const CharacterEditorPage = lazy(() => import("./features/character/CharacterEditorPage").then((m) => ({ default: m.CharacterEditorPage })));
 const ProjectMemoryPage = lazy(() => import("./features/memory/ProjectMemoryPage").then((m) => ({ default: m.ProjectMemoryPage })));
 
 const PAGES = ["board", "runs", "handoffs", "accounts", "resets", "insights", "usage", "recap", "rules", "safety", "skills", "memory"] as const;
@@ -57,7 +62,7 @@ const ICONS: Record<Page, ReactNode> = {
 const readHash = (): string => window.location.hash.replace(/^#\/?/, "");
 
 /** The page for the hash, plus the id on #/compare/<groupId> and #/accounts/<id>. */
-function usePage(): [Page, { compareId: string | null; workerId: string | null; liveId: string | null }, (p: string) => void] {
+function usePage(): [Page, { compareId: string | null; workerId: string | null; liveId: string | null; characterId: string | null }, (p: string) => void] {
   const [hash, setHash] = useState(readHash);
   useEffect(() => {
     const on = () => setHash(readHash());
@@ -65,11 +70,12 @@ function usePage(): [Page, { compareId: string | null; workerId: string | null; 
     return () => window.removeEventListener("hashchange", on);
   }, []);
   const cmp = /^compare\/(.+)$/.exec(hash);
-  const wrk = /^accounts\/(.+)$/.exec(hash);
+  const chr = /^accounts\/([^/]+)\/character$/.exec(hash);
+  const wrk = chr ? null : /^accounts\/(.+)$/.exec(hash);
   const liv = /^live\/(.+)$/.exec(hash);
-  const page: Page = cmp || liv ? "runs" : wrk ? "accounts" : (PAGES as readonly string[]).includes(hash) ? (hash as Page) : "board";
+  const page: Page = cmp || liv ? "runs" : wrk || chr ? "accounts" : (PAGES as readonly string[]).includes(hash) ? (hash as Page) : "board";
   const go = useCallback((p: string) => { window.location.hash = `/${p}`; }, []);
-  return [page, { compareId: cmp ? decodeURIComponent(cmp[1]) : null, workerId: wrk ? decodeURIComponent(wrk[1]) : null, liveId: liv ? decodeURIComponent(liv[1]) : null }, go];
+  return [page, { compareId: cmp ? decodeURIComponent(cmp[1]) : null, workerId: wrk ? decodeURIComponent(wrk[1]) : null, liveId: liv ? decodeURIComponent(liv[1]) : null, characterId: chr ? decodeURIComponent(chr[1]) : null }, go];
 }
 
 function Sidebar({ page, go, counts, connected, theme, setTheme, onSearch, className = "" }: {
@@ -81,26 +87,26 @@ function Sidebar({ page, go, counts, connected, theme, setTheme, onSearch, class
     const c = counts[id];
     return (
       <button key={id} onClick={() => go(id)} aria-current={on ? "page" : undefined}
-        className={`flex w-full shrink-0 cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-sm ${on ? "border border-line bg-card font-bold text-ink" : "border border-transparent text-nav hover:bg-card hover:text-ink"}`}>
+        className={`flex w-full shrink-0 cursor-pointer items-center gap-2.5 min-h-8 rounded-lg px-2.5 py-1 text-left text-sm ${on ? "border border-line bg-card font-bold text-ink" : "border border-transparent text-nav hover:bg-card hover:text-ink"}`}>
         <svg aria-hidden width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 ${on ? "text-ink" : "text-muted"}`}>{ICONS[id]}</svg>
         <span className="min-w-0 flex-1 truncate">{TITLES[id]}</span>
         {c && c.n > 0 && <span className={`text-meta font-bold tabular-nums ${c.urgent ? "text-action" : "text-muted"}`}>{c.n}</span>}
       </button>
     );
   };
-  const group = (label: string) => <span className="px-2.5 pb-1 pt-3 text-2xs font-bold tracking-[0.06em] text-muted first:pt-2">{label}</span>;
+  const group = (label: string) => <span className="px-2.5 pb-0.5 pt-2.5 text-2xs font-bold tracking-[0.06em] text-muted first:pt-1">{label}</span>;
   return (
-    <aside className={`h-full w-[236px] shrink-0 flex-col border-r border-line bg-surface px-3 py-4 ${className}`}>
-      <div className="flex shrink-0 items-center gap-2.5 px-2 pb-3">
+    <aside className={`h-full w-[236px] shrink-0 flex-col border-r border-line bg-surface px-3 pb-3 pt-3.5 ${className}`}>
+      <div className="flex shrink-0 items-center gap-2.5 px-2 pb-2.5">
         <Mark />
         <span className="text-xl font-bold tracking-[-0.04em]">shiftwell</span>
       </div>
-      <button onClick={onSearch} className="mb-1 flex shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-line bg-card px-2.5 py-2 text-left text-sm text-muted hover:text-ink">
+      <button onClick={onSearch} className="mb-1 flex min-h-9 shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-line bg-card px-2.5 py-1.5 text-left text-sm text-muted hover:border-muted hover:text-ink">
         <svg aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3 3" /></svg>
         <span className="flex-1">Search or jump to</span>
         <kbd className="rounded border border-line px-1.5 text-2xs font-bold [font-family:inherit]">Ctrl K</kbd>
       </button>
-      <nav aria-label="Main" className="-mx-1 flex min-h-0 flex-1 flex-col gap-px overflow-y-auto px-1 pb-2">
+      <nav aria-label="Main" className="-mx-1 flex min-h-0 flex-1 flex-col gap-px overflow-y-auto px-1 pb-1">
         {group("SHIFT")}
         {item("board")}
         {item("runs")}
@@ -118,18 +124,15 @@ function Sidebar({ page, go, counts, connected, theme, setTheme, onSearch, class
         {item("skills")}
         {item("memory")}
       </nav>
-      <div className="flex shrink-0 flex-col gap-1.5 border-t border-line px-1 pb-2 pt-3">
-        <span className="px-1.5 text-xs font-bold tracking-[0.06em] text-muted">THEME</span>
-        <ThemeSwitch value={theme} onChange={setTheme} />
-      </div>
-      <div className="flex shrink-0 flex-col gap-1 rounded-card border border-line bg-card p-2.5">
-        <div className="flex items-center gap-2">
-          <span className={`size-2 rounded-full ${connected ? "sw-live bg-pass" : "bg-fail"}`} />
-          <span className="text-sm font-bold">{connected ? "Safe mode on" : "Service offline"}</span>
-        </div>
-        <span className="text-xs leading-4 text-body">
-          {connected ? "Official CLIs only. No tokens read. Auto-rotation off." : "Start it with: shiftwell start"}
-        </span>
+      <div className="flex shrink-0 items-center justify-between gap-2 border-t border-line px-1 pt-2.5">
+        <Tooltip label={connected ? "Official CLIs only. No tokens read. Auto-rotation off." : "Start it with: shiftwell start"} side="top" className="min-w-0">
+          <span tabIndex={0} role="status" className="flex min-h-8 min-w-0 items-center gap-2 rounded-md px-1.5">
+            <span aria-hidden className={`size-2 shrink-0 rounded-full ${connected ? "sw-live bg-pass" : "bg-fail"}`} />
+            <span className="truncate text-meta font-bold">{connected ? "Safe mode" : "Service offline"}</span>
+            <span className="sr-only">{connected ? "Official CLIs only. No tokens read. Auto-rotation off." : "Start it with: shiftwell start"}</span>
+          </span>
+        </Tooltip>
+        <ThemeSwitch value={theme} onChange={setTheme} compact />
       </div>
     </aside>
   );
@@ -150,13 +153,34 @@ function Shell() {
   const [adding, setAdding] = useState(false);
   const [starting, setStarting] = useState(false);
   const toast = useToast();
-  const [page, { compareId, workerId, liveId }, go] = usePage();
+  const [page, { compareId, workerId, liveId, characterId }, go] = usePage();
   const [finishing, setFinishing] = useState<Run | null>(null);
   const [theme, setTheme] = useTheme();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [welcome, setWelcome] = useState<boolean | null>(null);
   const [navOpen, setNavOpen] = useState(false);
   const now = useTicker(30_000);
+  const mainRef = useRef<HTMLElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [titleGone, setTitleGone] = useState(false);
+  const [shortcuts, setShortcuts] = useState(false);
+  useEffect(() => {
+    const el = mainRef.current;
+    if (!el) return;
+    let t = 0;
+    const on = () => {
+      setScrolled(el.scrollTop > 2);
+      const h1 = el.querySelector("h1");
+      setTitleGone(h1 ? h1.getBoundingClientRect().bottom < 56 : el.scrollTop > 56);
+      el.setAttribute("data-scrolling", "");
+      window.clearTimeout(t);
+      t = window.setTimeout(() => el.removeAttribute("data-scrolling"), 900);
+    };
+    el.addEventListener("scroll", on, { passive: true });
+    return () => { el.removeEventListener("scroll", on); window.clearTimeout(t); };
+  }, []);
+  // A new page starts at the top, with its own title showing.
+  useEffect(() => { mainRef.current?.scrollTo({ top: 0 }); setScrolled(false); setTitleGone(false); }, [page, compareId, workerId, liveId]);
   useEffect(() => { setNavOpen(false); }, [page, compareId, workerId, liveId]);
   useEffect(() => {
     if (!navOpen) return;
@@ -220,7 +244,7 @@ function Shell() {
 
   const commands = useMemo(() => buildCommands({
     accounts, go: (r: string) => go(r),
-    addAccount: () => setAdding(true), startRun: () => setStarting(true), prune: ctx.prune, setTheme,
+    addAccount: () => setAdding(true), startRun: () => setStarting(true), prune: ctx.prune, setTheme, showShortcuts: () => setShortcuts(true),
     extraRoutes: (["resets", "usage", "recap", "rules", "safety", "skills", "memory"] as const).map((r) => ({ route: r, label: TITLES[r] })),
     openAccount: (a: Account) => go(`accounts/${a.id}`),
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -231,6 +255,8 @@ function Shell() {
     handoffs: { n: board?.suggestions.length ?? 0, urgent: true },
     accounts: { n: accounts.length },
   };
+  const noDialog = !paletteOpen && !adding && !starting && !finishing && !shortcuts && !welcome && !navOpen;
+  useShortcuts({ go: (r) => go(r), help: () => setShortcuts(true), startRun: () => { if (accounts.length) setStarting(true); }, addAccount: () => setAdding(true), enabled: noDialog });
   const sidebarProps = { page, go, counts, connected, theme, setTheme };
   const loading = <Skeleton rows={4} label="Loading the crew" />;
   const needsBoard = (node: ReactNode) => (board === null ? loading : node);
@@ -245,14 +271,14 @@ function Shell() {
             <button aria-label="Close navigation" onClick={() => setNavOpen(false)} className="flex-1 cursor-pointer bg-black/40" />
           </div>
         )}
-        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto">
-          <header className="sticky top-0 z-30 flex h-[52px] shrink-0 items-center justify-between gap-3 border-b border-line bg-page/90 px-4 backdrop-blur sm:px-7">
+        <main ref={mainRef} className="sw-main flex min-w-0 flex-1 flex-col overflow-y-auto">
+          <header className={`sticky top-0 z-30 flex h-[52px] shrink-0 items-center justify-between gap-3 border-b px-4 transition-shadow duration-200 sm:px-7 ${scrolled ? "border-line bg-page/90 shadow-[0_6px_16px_-10px_color-mix(in_srgb,var(--color-ink)_35%,transparent)] backdrop-blur" : "border-transparent bg-page"}`}>
             <div className="flex min-w-0 items-center gap-2">
-              <button onClick={() => setNavOpen(true)} aria-label="Open navigation" className="-ml-1.5 flex size-9 cursor-pointer items-center justify-center rounded-lg hover:bg-surface lg:hidden">
+              <button onClick={() => setNavOpen(true)} aria-label="Open navigation" className="-ml-1.5 flex size-10 cursor-pointer items-center justify-center rounded-lg hover:bg-surface lg:hidden">
                 <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden><path d="M2 4.5h14M2 9h14M2 13.5h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
               </button>
               <span className="lg:hidden"><Mark size={20} /></span>
-              <span className="truncate text-sm text-body">{TITLES[page]}</span>
+              <span aria-hidden={!titleGone} className={`truncate text-sm font-bold transition-opacity duration-200 ${titleGone ? "opacity-100" : "opacity-0"}`}>{TITLES[page]}</span>
             </div>
             <div className="flex shrink-0 gap-2">
               {page !== "accounts" && (
@@ -270,7 +296,8 @@ function Shell() {
               {page === "runs" && liveId && needsBoard(<LiveViewPage runId={liveId} ctx={ctx} />)}
               {page === "runs" && compareId && <ComparePage ctx={ctx} groupId={compareId} />}
               {page === "handoffs" && needsBoard(<HandoffsPage ctx={ctx} />)}
-              {page === "accounts" && !workerId && needsBoard(<AccountsPage ctx={ctx} />)}
+              {page === "accounts" && characterId && needsBoard(<CharacterEditorPage id={characterId} ctx={ctx} />)}
+              {page === "accounts" && !workerId && !characterId && needsBoard(<AccountsPage ctx={ctx} />)}
               {page === "accounts" && workerId && needsBoard(<WorkerDetailPage id={workerId} ctx={ctx} />)}
               {page === "resets" && needsBoard(<ResetCalendarPage ctx={ctx} />)}
               {page === "insights" && <InsightsPage ctx={ctx} />}
@@ -284,6 +311,7 @@ function Shell() {
           </div>
         </main>
 
+        {shortcuts && <ShortcutsDialog onClose={() => setShortcuts(false)} />}
         <CommandPalette commands={commands} open={paletteOpen} onOpenChange={setPaletteOpen} />
         {welcome && <Onboarding accountsCount={accounts.length} onAddAccount={() => setAdding(true)} onClose={() => setWelcome(false)} />}
 
@@ -293,7 +321,7 @@ function Shell() {
             onCreate={async (input: CreateProfileInput) => {
               const p = await api.createProfile(input);
               setAdding(false);
-              toast.success(`${p.name} added. Next: sign in from its row.`);
+              showActionToast(`${p.name} added. Next: sign in from its row.`, "Make their character", () => go(`accounts/${p.id}/character`));
             }}
           />
         )}

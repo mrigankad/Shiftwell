@@ -4,6 +4,7 @@ import { useToast } from "../../components/ui/Toast";
 import { buttonCls } from "../../components/ui/Button";
 import { Skeleton } from "../../components/states";
 import { memoryApi, type MemoryNote, type RepoEntry } from "./api";
+import { Tooltip } from "../../components/ui/Tooltip";
 
 const baseName = (repo: string) => repo.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || repo;
 
@@ -133,14 +134,16 @@ function NoteCard({ note, busy, onPin, onSave, onDelete }: {
           </div>
         ) : (
           <>
-            <button type="button" aria-pressed={note.pinned} aria-label={note.pinned ? "Unpin note" : "Pin note"} title={note.pinned ? "Unpin" : "Pin so every account sees it first"} onClick={onPin} disabled={busy}
+            <Tooltip label={note.pinned ? "Unpin note" : "Pin so every account sees it first"}>
+            <button type="button" aria-pressed={note.pinned} aria-label={note.pinned ? "Unpin note" : "Pin note"} onClick={onPin} disabled={busy}
               className={`${iconBtn} ${note.pinned ? "text-action" : ""}`}><PinIcon filled={note.pinned} /></button>
-            <button type="button" aria-label="Edit note" title="Edit" onClick={() => { setText(note.text); setEditing(true); }} className={iconBtn}>
+            </Tooltip>
+            <Tooltip label={"Edit note"}><button type="button" aria-label="Edit note" onClick={() => { setText(note.text); setEditing(true); }} className={iconBtn}>
               <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>
-            </button>
-            <button type="button" aria-label="Delete note" title="Delete" onClick={() => setConfirm(true)} className={iconBtn}>
+            </button></Tooltip>
+            <Tooltip label={"Delete note"}><button type="button" aria-label="Delete note" onClick={() => setConfirm(true)} className={iconBtn}>
               <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13" /></svg>
-            </button>
+            </button></Tooltip>
           </>
         )}
       </div>

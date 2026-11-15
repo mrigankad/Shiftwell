@@ -6,7 +6,7 @@ export function CheckBox({ checked, onChange, disabled, className = "" }: {
 }) {
   return (
     <button type="button" role="checkbox" aria-checked={checked} disabled={disabled} onClick={() => onChange(!checked)}
-      className={`flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-md border-2 disabled:cursor-not-allowed disabled:opacity-40 ${checked ? "border-action bg-action text-on-action" : "border-line bg-card"} ${className}`}>
+      className={`flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-2 disabled:cursor-not-allowed disabled:opacity-40 ${checked ? "border-action bg-action text-on-action" : "border-line bg-card"} ${className}`}>
       {checked && (
         <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M2.5 6.5l2.5 2.5 4.5-5.5" />

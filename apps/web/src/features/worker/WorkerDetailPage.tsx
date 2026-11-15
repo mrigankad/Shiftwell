@@ -142,7 +142,7 @@ export function WorkerDetailPage({ id, ctx }: { id: string; ctx: PageCtx }) {
     const otherName = other ? ctx.nameOf(other.profileId) : "another account";
     return (
       <li key={`${dir}-${run.id}`} className="flex items-center gap-3 border-t border-row py-2.5 first:border-t-0">
-        {other && <CrewAvatar provider={ctx.providerOf(other.profileId)} preset={ctx.presetOf(other.profileId)} size={28} />}
+        {other && <CrewAvatar provider={ctx.providerOf(other.profileId)} preset={ctx.presetOf(other.profileId)} accountId={other.profileId} size={28} />}
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-sm font-bold">{run.task}</span>
           <span className="truncate text-xs text-muted">{dir === "in" ? `Picked up from ${otherName}` : `Handed to ${otherName}`} · {ago(run.startedAt)}</span>
@@ -170,6 +170,7 @@ export function WorkerDetailPage({ id, ctx }: { id: string; ctx: PageCtx }) {
           {a.loginCommand && (
             <button type="button" onClick={() => ctx.login(a)} className="cursor-pointer min-h-10 rounded-lg border border-on-cta/40 px-3.5 py-2.5 text-sm font-bold hover:bg-on-cta/10">Sign in</button>
           )}
+          <button type="button" onClick={() => ctx.go(`accounts/${a.id}/character`)} className="cursor-pointer min-h-10 rounded-lg border border-on-cta/40 px-3.5 py-2.5 text-sm font-bold hover:bg-on-cta/10">Edit character</button>
           <button type="button" onClick={() => ctx.startRun()} className="cursor-pointer min-h-10 rounded-lg bg-action px-3.5 py-2.5 text-sm font-bold text-on-action hover:opacity-90">Start a run</button>
         </div>
       </section>

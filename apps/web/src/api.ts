@@ -1,4 +1,6 @@
 import { http } from "./lib/http";
+import type { Recipe } from "@shiftwell/crew";
+import { patchRoster, setRoster } from "./features/character/roster";
 export type Provider = "claude" | "codex" | "gemini" | "api";
 export type State = "unknown" | "room" | "on" | "low" | "out";
 
@@ -14,6 +16,11 @@ export interface Account {
   provider: Provider;
   plan?: string;
   configDir: string;
+  /** The pixel character to draw. Always set by a current daemon; older ones omit it. */
+  character?: Recipe;
+  /** True once someone has edited it; false means the derived default. */
+  characterCustom?: boolean;
+  defaultCharacter?: Recipe;
   api?: ApiConfig;
   keyPresent?: boolean;
   createdAt?: string;
@@ -55,6 +62,12 @@ export const api = {
     post<Account>("/api/profiles", input),
   presets: () => http.get<Preset[]>("/api/presets"),
   checkProfile: (id: string) => post<CheckResult>(`/api/profiles/${id}/check`, {}),
+  /** Save a character (or null for the default again), a new name, or a new plan. */
+  updateProfile: async (id: string, patch: { name?: string; plan?: string; character?: Recipe | null }) => {
+    const a = await http.patch<Account>(`/api/profiles/${id}`, patch);
+    patchRoster(a);
+    return a;
+  },
   removeProfile: (id: string) => http.del(`/api/profiles/${id}`),
   startRun: (input: { profileId: string; repo: string; task: string }) => post<Run>("/api/runs", input),
   handOff: (runId: string, toProfileId: string, reason?: string) => post<{ run: Run; note: string }>(`/api/runs/${runId}/handoff`, { toProfileId, reason }),
@@ -80,8 +93,13 @@ export function subscribe(onBoard: (b: Board) => void, onStatus: (connected: boo
     const key = (e.data as string).replace(/"generatedAt":"[^"]*",?/, "");
     if (key === last) return;
     last = key;
-    onBoard(JSON.parse(e.data));
+    const board = JSON.parse(e.data) as Board;
+    setRoster(board.accounts);
+    onBoard(board);
   };
   es.onerror = () => onStatus(false);
-  return () => es.close();
+  // Free the connection when the page is left, so the browser's per-host connection limit is never exhausted.
+  const close = () => es.close();
+  window.addEventListener("pagehide", close);
+  return () => { window.removeEventListener("pagehide", close); es.close(); };
 }

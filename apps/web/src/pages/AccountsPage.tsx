@@ -93,7 +93,8 @@ function AccountCard({ a, ctx }: { a: Account; ctx: PageCtx }) {
           : <UsageChart height={120} readings={hist} label={label} />}
       </div>
 
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2">
+        <button onClick={() => ctx.go(`accounts/${a.id}/character`)} className="cursor-pointer min-h-9 rounded-lg border border-line px-3 py-1.5 text-meta font-bold hover:bg-surface">Edit character</button>
         {a.loginCommand && (
           <button onClick={() => ctx.login(a)} className="cursor-pointer min-h-9 rounded-lg border border-line px-3 py-1.5 text-meta font-bold hover:bg-surface">Sign in</button>
         )}

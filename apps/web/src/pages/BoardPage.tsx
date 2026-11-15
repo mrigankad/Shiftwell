@@ -2,6 +2,7 @@ import { memo, useMemo, type ReactNode } from "react";
 import type { Account, Board } from "../api";
 import { CrewAvatar } from "../crew";
 import { ShiftFloor } from "../features/board/ShiftFloor";
+import { IconButton } from "../components/ui/Button";
 import { PageHeader } from "../components/ui/PageHeader";
 import { SectionHeader } from "../components/ui/Card";
 import { agoMinutes, resetIn } from "../lib/time";
@@ -16,17 +17,17 @@ const AccountRow = memo(function AccountRow({ a, now, onLogin, onRemove }: { a: 
   const resetText = stale ? "Unknown" : resetIn(reset, now);
   const age = u.ageMinutes === null ? "" : agoMinutes(u.ageMinutes);
   return (
-    <div className="group grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-4 gap-y-3 border-b border-row px-4 py-3.5 last:border-b-0 xl:flex">
-      <div className="col-span-2 flex min-w-0 items-center gap-2.5 xl:w-[170px] xl:shrink-0">
+    <div className="group grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-4 gap-y-3 border-b border-row px-4 py-3.5 last:border-b-0 min-[1400px]:flex">
+      <div className="col-span-2 flex min-w-0 items-center gap-2.5 min-[1400px]:w-[170px] min-[1400px]:shrink-0">
         <CrewAvatar provider={a.provider} preset={a.api?.preset} name={a.name} state={u.state} />
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-ui font-bold">{a.name}</span>
           <span className="truncate text-xs text-muted">{a.plan || a.provider}</span>
         </div>
-        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold xl:hidden ${pill.cls}`}>{pill.label}</span>
-        <button onClick={onRemove} aria-label={`Remove ${a.name}`} className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-muted hover:text-fail xl:hidden">×</button>
+        <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold min-[1400px]:hidden ${pill.cls}`}>{pill.label}</span>
+        <IconButton tone="danger" onClick={onRemove} aria-label={`Remove ${a.name}`} className="min-[1400px]:hidden"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M2 2l6 6M8 2l-6 6" /></svg></IconButton>
       </div>
-      <div className="col-span-2 min-w-0 text-sm text-body [overflow-wrap:anywhere] xl:flex-1">
+      <div className="col-span-2 min-w-0 text-sm text-body [overflow-wrap:anywhere] min-[1400px]:flex-1">
         {u.latest ? (
           <span>{stale ? `Last seen ${age}` : `Updated ${age}`}{u.latest.model ? ` · ${u.latest.model}` : ""}</span>
         ) : a.loginCommand ? (
@@ -43,18 +44,18 @@ const AccountRow = memo(function AccountRow({ a, now, onLogin, onRemove }: { a: 
           <span>API key account</span>
         )}
       </div>
-      <div className={`min-w-0 xl:w-[130px] xl:shrink-0 ${stale ? "opacity-45" : ""}`}>
-        <span className="mb-1 block text-2xs font-bold text-muted xl:hidden">{u.latest?.daily ? "Daily limit" : "5-hour"}</span>
-        {u.latest?.daily ? <div className="flex flex-col"><Bar pct={u.latest.daily.pct} /><span className="hidden text-2xs text-muted xl:block">daily limit</span></div> : <Bar pct={u.latest?.fiveHour?.pct} />}
+      <div className={`min-w-0 min-[1400px]:w-[130px] min-[1400px]:shrink-0 ${stale ? "opacity-45" : ""}`}>
+        <span className="mb-1 block text-2xs font-bold text-muted min-[1400px]:hidden">{u.latest?.daily ? "Daily limit" : "5-hour"}</span>
+        {u.latest?.daily ? <div className="flex flex-col"><Bar pct={u.latest.daily.pct} /><span className="hidden text-2xs text-muted min-[1400px]:block">daily limit</span></div> : <Bar pct={u.latest?.fiveHour?.pct} />}
       </div>
-      <div className={`min-w-0 xl:w-[130px] xl:shrink-0 ${stale ? "opacity-45" : ""}`}>
-        <span className="mb-1 block text-2xs font-bold text-muted xl:hidden">Weekly</span>
+      <div className={`min-w-0 min-[1400px]:w-[130px] min-[1400px]:shrink-0 ${stale ? "opacity-45" : ""}`}>
+        <span className="mb-1 block text-2xs font-bold text-muted min-[1400px]:hidden">Weekly</span>
         <Bar pct={u.latest?.sevenDay?.pct} />
       </div>
-      <span className="col-span-2 text-sm tabular-nums text-body xl:w-[72px] xl:shrink-0"><span className="text-xs text-muted xl:hidden">Resets in </span>{resetText}</span>
-      <div className="hidden w-[100px] shrink-0 items-center justify-between xl:flex">
+      <span className="col-span-2 text-sm tabular-nums text-body min-[1400px]:w-[72px] min-[1400px]:shrink-0"><span className="text-xs text-muted min-[1400px]:hidden">Resets in </span>{resetText}</span>
+      <div className="hidden w-[100px] shrink-0 items-center justify-between min-[1400px]:flex">
         <span className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-bold ${pill.cls}`}>{pill.label}</span>
-        <button onClick={onRemove} aria-label={`Remove ${a.name}`} className="cursor-pointer rounded px-1 text-muted opacity-0 hover:text-fail focus:opacity-100 group-hover:opacity-100">×</button>
+        <IconButton tone="danger" onClick={onRemove} aria-label={`Remove ${a.name}`} className="opacity-0 focus-visible:opacity-100 group-hover:opacity-100"><svg width="10" height="10" viewBox="0 0 10 10" aria-hidden stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M2 2l6 6M8 2l-6 6" /></svg></IconButton>
       </div>
     </div>
   );
@@ -109,7 +110,7 @@ export function BoardPage({ ctx, board }: { ctx: PageCtx; board: Board | null })
     return (
       <div className="flex flex-col gap-5">
         <PageHeader eyebrow={new Date(now).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })} title="Checking on the crew" />
-        <div className="h-[220px] animate-pulse rounded-card bg-track sm:h-[300px]" />
+        <div className="h-[220px] sw-shimmer rounded-card sm:h-[300px]" />
       </div>
     );
   }
@@ -139,11 +140,11 @@ export function BoardPage({ ctx, board }: { ctx: PageCtx; board: Board | null })
           </div>
         </div>
       ) : (
-        <div className="grid min-w-0 grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_260px]">
+        <div className="grid min-w-0 grid-cols-1 gap-5 min-[1400px]:grid-cols-[minmax(0,1fr)_260px]">
           <section className="flex min-w-0 flex-col gap-3">
             <SectionHeader title="Accounts" aside={<button onClick={() => ctx.go("accounts")} className="cursor-pointer py-1 text-sm font-bold text-action hover:underline">All {accounts.length} accounts</button>} />
             <div className="overflow-hidden rounded-card border border-line bg-card">
-              <div className="hidden gap-4 border-b border-line bg-surface px-4 py-2.5 text-meta font-bold text-body xl:flex">
+              <div className="hidden gap-4 border-b border-line bg-surface px-4 py-2.5 text-meta font-bold text-body min-[1400px]:flex">
                 <span className="w-[170px] shrink-0">Account</span>
                 <span className="min-w-0 flex-1">Status</span>
                 <span className="w-[130px] shrink-0">5-hour</span>

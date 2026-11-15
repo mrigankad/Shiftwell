@@ -23,28 +23,31 @@ export interface CommandContext {
   prune: () => void;
   setTheme: (t: ThemeChoice) => void;
   /** Extra routes beyond the built in ones. `route` has no leading #/ . */
-  extraRoutes?: { route: string; label: string; hint?: string }[];
+  extraRoutes?: { route: string; label: string; hint?: string; shortcut?: string }[];
+  /** Opens the keyboard shortcuts dialog. */
+  showShortcuts?: () => void;
   /** Defaults to navigating to the accounts page. */
   openAccount?: (a: Account) => void;
 }
 
-const ROUTES = [
-  { route: "board", label: "Shift board", hint: "Who is on shift right now" },
-  { route: "runs", label: "Runs", hint: "Every task and its worktree" },
-  { route: "handoffs", label: "Handoffs", hint: "Move a task to another account" },
-  { route: "accounts", label: "Accounts", hint: "Add, sign in or remove" },
-  { route: "insights", label: "Insights", hint: "Usage over time" },
+const ROUTES: { route: string; label: string; hint?: string; shortcut?: string }[] = [
+  { route: "board", label: "Shift board", hint: "Who is on shift right now", shortcut: "G B" },
+  { route: "runs", shortcut: "G R", label: "Runs", hint: "Every task and its worktree" },
+  { route: "handoffs", shortcut: "G H", label: "Handoffs", hint: "Move a task to another account" },
+  { route: "accounts", shortcut: "G A", label: "Accounts", hint: "Add, sign in or remove" },
+  { route: "insights", shortcut: "G I", label: "Insights", hint: "Usage over time" },
 ];
 
 export function buildCommands(ctx: CommandContext): Command[] {
   const out: Command[] = [];
   for (const r of [...ROUTES, ...(ctx.extraRoutes ?? [])]) {
-    out.push({ id: `nav:${r.route}`, label: `Go to ${r.label}`, hint: r.hint, group: "Navigate", run: () => ctx.go(r.route) });
+    out.push({ id: `nav:${r.route}`, label: `Go to ${r.label}`, hint: r.hint, group: "Navigate", shortcut: r.shortcut, run: () => ctx.go(r.route) });
   }
   out.push(
-    { id: "act:add-account", label: "Add account", hint: "Connect another AI tool", group: "Actions", run: ctx.addAccount },
-    { id: "act:start-run", label: "Start a run", hint: "Give an account a task", group: "Actions", run: ctx.startRun },
+    { id: "act:add-account", label: "Add account", hint: "Connect another AI tool", group: "Actions", shortcut: "Shift A", run: ctx.addAccount },
+    { id: "act:start-run", label: "Start a run", hint: "Give an account a task", group: "Actions", shortcut: "N", run: ctx.startRun },
     { id: "act:prune", label: "Clean up runs", hint: "Close runs whose folder is gone", group: "Actions", run: ctx.prune },
+    ...(ctx.showShortcuts ? [{ id: "act:shortcuts", label: "Keyboard shortcuts", hint: "See every shortcut", group: "Actions", shortcut: "?", run: ctx.showShortcuts }] : []),
     { id: "theme:light", label: "Theme: Day", group: "Appearance", run: () => ctx.setTheme("light") },
     { id: "theme:night", label: "Theme: Night", group: "Appearance", run: () => ctx.setTheme("night") },
     { id: "theme:system", label: "Theme: Auto", hint: "Follow the system setting", group: "Appearance", run: () => ctx.setTheme("system") },

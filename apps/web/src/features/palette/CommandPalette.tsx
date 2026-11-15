@@ -89,7 +89,8 @@ function PaletteDialog({ commands, onClose }: { commands: Command[]; onClose: ()
                   <span className="truncate text-ui font-bold">{cmd.label}</span>
                   {cmd.hint && <span className="truncate text-meta text-body">{cmd.hint}</span>}
                 </span>
-                {idx === active ? <kbd className={kbd}>Enter</kbd> : cmd.shortcut && <kbd className={kbd}>{cmd.shortcut}</kbd>}
+                {cmd.shortcut && <span className="flex shrink-0 gap-1">{cmd.shortcut.split(" ").map((k) => <kbd key={k} className={kbd}>{k}</kbd>)}</span>}
+                {idx === active && <kbd className={kbd}>Enter</kbd>}
               </div>
             </li>
           ))}

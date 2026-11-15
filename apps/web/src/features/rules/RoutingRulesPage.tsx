@@ -8,6 +8,7 @@ import { buttonCls } from "../../components/ui/Button";
 import { Skeleton } from "../../components/states";
 import { ErrorState } from "../../components/states";
 import { RuleDialog } from "./RuleDialog";
+import { Tooltip } from "../../components/ui/Tooltip";
 
 const chip = "max-w-full rounded-lg [overflow-wrap:anywhere] bg-surface px-2.5 py-1 text-sm font-bold";
 const arrow = "flex size-9 cursor-pointer items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-action";
@@ -69,7 +70,7 @@ function TryIt({ accounts }: { accounts: Account[] }) {
           <div className="flex flex-col gap-2 rounded-xl bg-surface p-3.5">
             {result.profileId ? (
               <div className="flex items-center gap-2.5">
-                {chosen && <CrewAvatar provider={chosen.provider} preset={chosen.api?.preset} size={32} state={chosen.usage.state} />}
+                {chosen && <CrewAvatar provider={chosen.provider} preset={chosen.api?.preset} accountId={chosen.id} size={32} state={chosen.usage.state} />}
                 <span className="text-title font-bold">{result.profileName}</span>
               </div>
             ) : <span className="text-title font-bold">No account right now</span>}
@@ -144,13 +145,13 @@ export function RoutingRulesPage({ accounts }: { accounts: Account[] }) {
                 onDrop={(e) => { e.preventDefault(); drop(r.id); setDragId(null); setOverId(null); }} onDragEnd={() => { setDragId(null); setOverId(null); }}
                 className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border bg-card px-3 py-3 sm:flex-nowrap ${overId === r.id && dragId !== r.id ? "border-action" : "border-line"} ${dragId === r.id ? "opacity-50" : ""} ${r.enabled ? "" : "opacity-70"}`}>
                 <div className="flex shrink-0 flex-col items-center">
-                  <button type="button" aria-label={`Move ${r.name} up`} disabled={i === 0} onClick={() => move(i, -1)} className={arrow}>
+                  <Tooltip label={`Move ${r.name} up`}><button type="button" aria-label={`Move ${r.name} up`} disabled={i === 0} onClick={() => move(i, -1)} className={arrow}>
                     <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 7.5L6 4l3.5 3.5" /></svg>
-                  </button>
+                  </button></Tooltip>
                   <span aria-hidden className="text-meta font-bold text-muted">{i + 1}</span>
-                  <button type="button" aria-label={`Move ${r.name} down`} disabled={i === rules.length - 1} onClick={() => move(i, 1)} className={arrow}>
+                  <Tooltip label={`Move ${r.name} down`}><button type="button" aria-label={`Move ${r.name} down`} disabled={i === rules.length - 1} onClick={() => move(i, 1)} className={arrow}>
                     <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg>
-                  </button>
+                  </button></Tooltip>
                 </div>
                 <div className="flex min-w-0 basis-[calc(100%-3rem)] flex-col gap-1.5 sm:flex-1 sm:basis-0">
                   <span className="text-meta font-bold text-muted">{r.name}</span>

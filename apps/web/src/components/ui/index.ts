@@ -10,3 +10,4 @@ export { Stepper, TimeField, TimeRange } from "../../features/guardrails/control
 export { Listbox } from "../Listbox";
 export { CheckBox, Segmented, Modal } from "../../ui";
 export { EmptyState, ErrorState, OfflineBanner, Skeleton } from "../states";
+export { Tooltip } from "./Tooltip";

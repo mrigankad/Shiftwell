@@ -51,7 +51,7 @@ export function RunsPage({ ctx }: { ctx: PageCtx }) {
             <div key={b.groupId} className="border-b border-row last:border-b-0">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-surface px-4 py-2.5">
                 <div className="flex min-w-0 flex-1 basis-[180px] flex-col">
-                  <span className="truncate text-ui font-bold">{b.runs[0].task}</span>
+                  <span className="line-clamp-2 text-ui font-bold md:line-clamp-1">{b.runs[0].task}</span>
                   <span className="text-xs text-muted">{groupSize(ctx.runs, b.groupId)} accounts in parallel</span>
                 </div>
                 <button onClick={() => { window.location.hash = `/compare/${b.groupId}`; }} className="min-h-9 cursor-pointer rounded-lg border border-line bg-card px-3 py-1.5 text-meta font-bold hover:bg-page">Compare</button>

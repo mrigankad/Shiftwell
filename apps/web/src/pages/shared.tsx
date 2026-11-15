@@ -87,7 +87,7 @@ export function RunRow({ run, name, provider, preset, fromName, accounts, onOpen
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 border-b border-row px-4 py-3 last:border-b-0 md:flex-nowrap">
       <CrewAvatar provider={provider} preset={preset} size={32} name={name} />
       <div className="flex min-w-0 flex-1 basis-[180px] flex-col">
-        <a href={`#/live/${run.id}`} title="Open live view" className="truncate text-ui font-bold hover:underline">{run.task}</a>
+        <a href={`#/live/${run.id}`} title="Open live view" className="block min-h-6 line-clamp-2 leading-6 md:line-clamp-1 text-ui font-bold hover:underline">{run.task}</a>
         <span className="text-xs text-muted [overflow-wrap:anywhere] md:truncate">
           {name}{fromName ? ` · picked up from ${fromName}` : ""} · {run.branch} · {ago(run.startedAt)}{changeText}{run.worktreeRemoved ? " · folder removed" : ""}
         </span>

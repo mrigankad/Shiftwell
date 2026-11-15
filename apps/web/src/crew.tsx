@@ -1,28 +1,28 @@
+import { useMemo } from "react";
 import type { Provider, State } from "./api";
-
-import { crewArtFor } from "./features/assets/crewArt";
 import { logoFor } from "./features/assets/logos";
-
-const TILE = 285;
+import { providerDefault, svgFor, type Recipe } from "./features/character/recipes";
+import { useRoster } from "./features/character/roster";
 
 const PROVIDER_INITIAL: Record<string, string> = { claude: "C", codex: "X", gemini: "G", api: "A" };
 
 /**
- * Pixel crew portrait. The provider or account initial sits underneath, so the slot is never blank
- * while the sprite loads or if it fails.
+ * An account's pixel character, drawn as inline SVG with crisp edges at any size. The recipe comes from, in order:
+ * the `recipe` prop, the account by `accountId`, the account by `name` (names are unique), and last the provider's
+ * default character, which is what provider tiles in dialogs show. The initial sits underneath in case a recipe cannot be drawn.
  */
-export function CrewAvatar({ provider, preset, size = 34, state, name }: { provider: Provider; preset?: string; size?: number; state?: State; name?: string }) {
-  const art = crewArtFor(provider, preset);
+export function CrewAvatar({ provider, preset, size = 34, state, name, accountId, recipe }: {
+  provider: Provider; preset?: string; size?: number; state?: State; name?: string; accountId?: string; recipe?: Recipe;
+}) {
+  const roster = useRoster();
+  const r = recipe ?? (accountId ? roster.byId.get(accountId) : undefined) ?? (name ? roster.byName.get(name.trim().toLowerCase()) : undefined) ?? providerDefault(provider, preset);
+  const svg = useMemo(() => svgFor(r), [r]);
   const dim = state === "out" ? "grayscale(0.7) brightness(0.8)" : state === "low" ? "saturate(0.6)" : undefined;
   const initial = (name?.trim()[0] ?? PROVIDER_INITIAL[provider] ?? "?").toUpperCase();
-  const s = size / TILE;
-  const sprite = art.kind === "image"
-    ? { backgroundImage: `url(${art.src})`, backgroundSize: "cover", backgroundPosition: "center" }
-    : { backgroundImage: "url(/crew.png)", backgroundSize: `${1776 * s}px ${592 * s}px`, backgroundPosition: `${-(7 + 296 * art.index) * s}px ${-125 * s}px` };
   return (
     <div aria-hidden className="relative shrink-0 overflow-hidden rounded-lg bg-track" style={{ width: size, height: size }}>
       <span className="absolute inset-0 flex items-center justify-center font-bold text-body" style={{ fontSize: Math.round(size * 0.42) }}>{initial}</span>
-      <div className="absolute inset-0 bg-no-repeat" style={{ ...sprite, filter: dim, imageRendering: "pixelated" }} />
+      {svg && <div className="absolute inset-0 [&>svg]:block" style={{ filter: dim }} dangerouslySetInnerHTML={{ __html: svg }} />}
     </div>
   );
 }

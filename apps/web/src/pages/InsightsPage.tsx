@@ -57,7 +57,7 @@ function AccountTable({ accounts }: { accounts: InsightAccount[] }) {
   const head = (k: SortKey, text: string, right = true) => (
     <th scope="col" aria-sort={key === k ? (dir === "asc" ? "ascending" : "descending") : "none"} className={`px-4 py-2.5 ${right ? "text-right" : "text-left"}`}>
       <button type="button" onClick={() => { if (k === key) setDir(dir === "asc" ? "desc" : "asc"); else { setKey(k); setDir(k === "name" ? "asc" : "desc"); } }}
-        className={`inline-flex cursor-pointer items-center gap-1 rounded-md text-meta font-bold hover:text-ink ${key === k ? "text-ink" : "text-muted"}`}>
+        className={`inline-flex min-h-7 cursor-pointer items-center gap-1 rounded-md text-meta font-bold hover:text-ink ${key === k ? "text-ink" : "text-muted"}`}>
         {text}
         <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: key === k ? 1 : 0.35, transform: key === k && dir === "asc" ? "rotate(180deg)" : undefined }}>
           <path d="M2 3.5l3 3 3-3" />
@@ -71,7 +71,7 @@ function AccountTable({ accounts }: { accounts: InsightAccount[] }) {
       {rows.map((a) => (
         <li key={a.id} className="flex flex-col gap-3 rounded-card border border-line bg-card p-4">
           <div className="flex items-center gap-2.5">
-            <CrewAvatar provider={a.provider} preset={a.preset} size={28} />
+            <CrewAvatar provider={a.provider} preset={a.preset} accountId={a.id} size={28} />
             <span className="min-w-0 truncate font-bold">{a.name}</span>
           </div>
           <dl className="grid grid-cols-2 gap-3 text-meta">
@@ -95,7 +95,7 @@ function AccountTable({ accounts }: { accounts: InsightAccount[] }) {
             <tr key={a.id} className="border-b border-row last:border-b-0">
               <td className="px-4 py-3">
                 <div className="flex items-center gap-2.5">
-                  <CrewAvatar provider={a.provider} preset={a.preset} size={28} />
+                  <CrewAvatar provider={a.provider} preset={a.preset} accountId={a.id} size={28} />
                   <span className="font-bold">{a.name}</span>
                 </div>
               </td>
@@ -151,7 +151,7 @@ export function InsightsPage(_: { ctx: PageCtx }) {
 
   const totalHours = accounts.reduce((s, a) => s + a.hoursAtLimitLast7d, 0);
   const best = data.bestNext ? accounts.find((a) => a.id === data.bestNext!.id) : undefined;
-  const opts = [{ id: CREW, label: "Whole crew" }, ...accounts.map((a) => ({ id: a.id, label: a.name, icon: <CrewAvatar provider={a.provider} preset={a.preset} size={20} /> }))];
+  const opts = [{ id: CREW, label: "Whole crew" }, ...accounts.map((a) => ({ id: a.id, label: a.name, icon: <CrewAvatar provider={a.provider} preset={a.preset} accountId={a.id} size={20} /> }))];
   const head = data.crewHeadroomNow;
 
   return (
@@ -167,7 +167,7 @@ export function InsightsPage(_: { ctx: PageCtx }) {
         <Tile label="Best next account">
           {data.bestNext ? (
             <div className="flex items-start gap-3">
-              <CrewAvatar provider={best?.provider ?? "api"} preset={best?.preset} size={40} />
+              <CrewAvatar provider={best?.provider ?? "api"} preset={best?.preset} accountId={best?.id} size={40} />
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-title font-bold">{data.bestNext.name}</span>
                 <span className="text-meta leading-[18px] text-body">{data.bestNext.reason}</span>

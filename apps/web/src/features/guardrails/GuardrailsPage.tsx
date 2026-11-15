@@ -8,6 +8,7 @@ import { buttonCls } from "../../components/ui/Button";
 import { Skeleton } from "../../components/states";
 import { ErrorState } from "../../components/states";
 import { Stepper, Switch, TimeRange } from "./controls";
+import { Tooltip } from "../../components/ui/Tooltip";
 
 const DEFAULT_QUIET = { start: "22:00", end: "07:00" };
 
@@ -51,10 +52,10 @@ function BlockedPaths({ paths, onChange }: { paths: string[]; onChange: (p: stri
           {paths.map((p) => (
             <li key={p} className="flex max-w-full items-center gap-1.5 break-all rounded-lg bg-surface py-1 pl-3 pr-1 text-sm font-bold">
               {p}
-              <button type="button" aria-label={`Remove ${p}`} onClick={() => onChange(paths.filter((x) => x !== p))}
+              <Tooltip label={`Remove ${p}`}><button type="button" aria-label={`Remove ${p}`} onClick={() => onChange(paths.filter((x) => x !== p))}
                 className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted hover:bg-line hover:text-ink">
                 <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M2 2l6 6M8 2l-6 6" /></svg>
-              </button>
+              </button></Tooltip>
             </li>
           ))}
         </ul>
@@ -115,7 +116,7 @@ export function GuardrailsPage({ accounts }: { accounts: Account[] }) {
   if (!draft || !saved) {
     return (
       <div className="flex flex-col gap-6">
-        <PageTitle title="Guardrails" eyebrow="Safety" />
+        <PageTitle title="Guardrails" eyebrow="Guardrails" />
         {error ? <ErrorState title="Could not load guardrails" body={error} /> : <Skeleton rows={4} label="Loading guardrails" />}
       </div>
     );
@@ -133,7 +134,7 @@ export function GuardrailsPage({ accounts }: { accounts: Account[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageTitle eyebrow="Safety" title="Set the limits the crew works within">
+      <PageTitle eyebrow="Guardrails" title="Set the limits the crew works within">
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <button type="button" disabled={!dirty || busy} onClick={() => { setDraft(saved); setError(null); }}
             className="min-h-9 cursor-pointer rounded-lg border border-line px-3.5 py-2 text-sm font-bold hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40">Discard</button>

@@ -1,4 +1,5 @@
 import { forwardRef, type ButtonHTMLAttributes } from "react";
+import { Tooltip } from "./Tooltip";
 
 export type ButtonVariant = "primary" | "accent" | "secondary" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md";
@@ -26,13 +27,15 @@ export const Button = forwardRef<HTMLButtonElement, BtnProps>(function Button({ 
   return <button ref={ref} type={type} className={buttonCls(variant, size, className)} {...rest} />;
 });
 
-type IconProps = ButtonHTMLAttributes<HTMLButtonElement> & { "aria-label": string; tone?: "default" | "danger" };
+type IconProps = ButtonHTMLAttributes<HTMLButtonElement> & { "aria-label": string; tone?: "default" | "danger"; shortcut?: string; tipSide?: "top" | "bottom" | "right" };
 
 /** Square icon-only button. Always pass an aria-label. */
-export const IconButton = forwardRef<HTMLButtonElement, IconProps>(function IconButton({ className = "", tone = "default", type = "button", ...rest }, ref) {
+export const IconButton = forwardRef<HTMLButtonElement, IconProps>(function IconButton({ className = "", tone = "default", type = "button", shortcut, tipSide, ...rest }, ref) {
   return (
+    <Tooltip label={rest["aria-label"]} shortcut={shortcut} side={tipSide}>
     <button ref={ref} type={type}
-      className={`flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-control text-muted hover:bg-surface disabled:cursor-not-allowed disabled:opacity-30 ${tone === "danger" ? "hover:text-fail" : "hover:text-ink"} ${className}`}
+      className={`flex size-9 shrink-0 active:bg-row cursor-pointer items-center justify-center rounded-control text-muted hover:bg-surface disabled:cursor-not-allowed disabled:opacity-30 ${tone === "danger" ? "hover:text-fail" : "hover:text-ink"} ${className}`}
       {...rest} />
+    </Tooltip>
   );
 });

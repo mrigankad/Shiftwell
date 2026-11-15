@@ -1,5 +1,6 @@
 import type { Account } from "../../api";
 import { CrewAvatar } from "../../crew";
+import { Tooltip } from "../../components/ui/Tooltip";
 
 const icon = "flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-line bg-card text-body hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-action";
 
@@ -29,15 +30,15 @@ export function OrderedPicker({ accounts, value, onChange, label }: { accounts: 
               <span aria-hidden className="w-4 text-meta font-bold text-muted">{i + 1}</span>
               <CrewAvatar provider={a.provider} preset={a.api?.preset} name={a.name} size={26} state={a.usage.state} />
               <span className="min-w-0 flex-1 truncate text-sm font-bold">{a.name}</span>
-              <button type="button" aria-label={`Move ${a.name} up`} disabled={i === 0} onClick={() => move(i, -1)} className={icon}>
+              <Tooltip label={`Move ${a.name} up`}><button type="button" aria-label={`Move ${a.name} up`} disabled={i === 0} onClick={() => move(i, -1)} className={icon}>
                 <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 7.5L6 4l3.5 3.5" /></svg>
-              </button>
-              <button type="button" aria-label={`Move ${a.name} down`} disabled={i === chosen.length - 1} onClick={() => move(i, 1)} className={icon}>
+              </button></Tooltip>
+              <Tooltip label={`Move ${a.name} down`}><button type="button" aria-label={`Move ${a.name} down`} disabled={i === chosen.length - 1} onClick={() => move(i, 1)} className={icon}>
                 <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg>
-              </button>
-              <button type="button" aria-label={`Remove ${a.name}`} onClick={() => onChange(value.filter((x) => x !== a.id))} className={icon}>
+              </button></Tooltip>
+              <Tooltip label={`Remove ${a.name}`}><button type="button" aria-label={`Remove ${a.name}`} onClick={() => onChange(value.filter((x) => x !== a.id))} className={icon}>
                 <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M2 2l6 6M8 2l-6 6" /></svg>
-              </button>
+              </button></Tooltip>
             </li>
           ))}
         </ol>
