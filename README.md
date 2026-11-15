@@ -2,8 +2,6 @@
   <img src="docs/readme/01-hero.jpg" alt="Shiftwell: every AI plan, one control room. A pixel-art night office where the AI crew works at their desks." width="100%">
 </p>
 
-<h3 align="center">Every AI plan. One control room.</h3>
-
 <p align="center">
   Shiftwell watches your Claude Code, Codex and Gemini accounts, plus Kimi, Grok, DeepSeek, NVIDIA NIM and Ollama,<br>
   and hands the work to the one with room left. Local only. Official CLIs only. It never reads your tokens.
