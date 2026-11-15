@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans Variable", system-ui, sans-serif;
+  --color-ink: #16181D;
+  --color-body: #5E6370;
+  --color-muted: #7A7F8C;
+  --color-line: #E8E8EC;
+  --color-surface: #F7F7F8;
+  --color-action: #C9480A;
+  --color-action-soft: #FFF0E6;
+  --color-shift: #FF5A1F;
+  --color-pass: #16A06A;
+  --color-pass-soft: #E7F6EF;
+  --color-warn: #B87400;
+  --color-warn-soft: #FFF4DC;
+  --color-fail: #E5484D;
+  --color-fail-soft: #FDECEC;
+}
+
+body { @apply bg-white text-ink font-sans antialiased; }
