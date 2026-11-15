@@ -50,14 +50,20 @@ const update = (id: string, patch: Partial<Run>) => save(listRuns().map((r) => (
 const git = (cwd: string, ...args: string[]) =>
   execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 
+/**
+ * Testing aid: SHIFTWELL_CLI_CLAUDE, SHIFTWELL_CLI_CODEX and SHIFTWELL_CLI_GEMINI replace the program name
+ * (used verbatim, so it may carry arguments, e.g. `node "/path/fake-claude.mjs"`).
+ */
+const cliFor = (fallback: "claude" | "codex" | "gemini"): string => process.env[`SHIFTWELL_CLI_${fallback.toUpperCase()}`]?.trim() || fallback;
+
 /** The interactive CLI for a profile, with an optional first prompt. API profiles run Codex too, configured through CODEX_HOME. */
 export function agentCommand(profile: Profile, prompt?: string): string | null {
   const q = prompt ? ` "${prompt.replace(/"/g, "'")}"` : "";
   switch (profile.provider) {
-    case "claude": return `claude${q}`;
+    case "claude": return `${cliFor("claude")}${q}`;
     case "codex":
-    case "api": return `codex${q}`;
-    case "gemini": return prompt ? `gemini -i${q}` : "gemini";
+    case "api": return `${cliFor("codex")}${q}`;
+    case "gemini": return prompt ? `${cliFor("gemini")} -i${q}` : cliFor("gemini");
     default: return null;
   }
 }

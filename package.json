@@ -9,6 +9,7 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "desktop": "pnpm --filter @shiftwell/desktop dev",
+    "e2e": "pnpm --filter @shiftwell/core --filter @shiftwell/daemon build && node e2e/run.mjs",
     "shiftwell": "node apps/cli/dist/main.js"
   },
   "packageManager": "pnpm@11.8.0"

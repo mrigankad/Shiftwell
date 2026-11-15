@@ -5,11 +5,12 @@ import { spawn } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  listProfiles, createProfile, removeProfile, getProfile, envFor, loginCommand,
-  installClaudeStatusHook, installGeminiTelemetry, usageFor, suggestHandoffs, type Provider, type Usage,
+  listProfiles, createProfile, updateProfile, characterFor, defaultCharacter, removeProfile, getProfile, envFor, loginCommand,
+  installClaudeStatusHook, installGeminiTelemetry, usageFor, suggestHandoffs, type Provider, type Profile, type Usage,
   listRuns, startRun, startRuns, runDiffStat, handOff, finishRun, agentCommand, HANDOFF_PROMPT, readHandoffNote, readSamples,
   runChanges, cachedRunChanges, pruneRuns, insights, apiPresets, installApiProvider, type ApiConfig, checkStart,
 } from "@shiftwell/core";
+import { openHeadless, isHeadless } from "./rotator.js";
 import { registerShim } from "./shim.js";
 import { registerRuleRoutes } from "./routes-rules.js";
 import { registerKnowledgeRoutes } from "./routes-knowledge.js";
@@ -17,12 +18,15 @@ import { registerLiveRoutes } from "./routes-live.js";
 
 const PROVIDERS: Provider[] = ["claude", "codex", "gemini", "api"];
 
+/** The effective recipe, whether it was edited, and the derived default (for "Reset to default"). */
+const characterView = (p: Profile) => ({ character: characterFor(p), characterCustom: !!p.character, defaultCharacter: defaultCharacter(p) });
+
 export function board() {
   const profiles = listProfiles();
   const usage = new Map<string, Usage>(profiles.map((p) => [p.id, usageFor(p)]));
   return {
     generatedAt: new Date().toISOString(),
-    accounts: profiles.map((p) => ({ ...p, ...(p.api ? { keyPresent: !!process.env[p.api.keyEnv] } : {}), usage: usage.get(p.id)!, loginCommand: loginCommand(p) })),
+    accounts: profiles.map((p) => ({ ...p, ...characterView(p),...(p.api ? { keyPresent: !!process.env[p.api.keyEnv] } : {}), usage: usage.get(p.id)!, loginCommand: loginCommand(p) })),
     runs: listRuns().slice(-30).reverse().map((r) => ({ ...r, changes: r.status === "active" ? runChanges(r) : cachedRunChanges(r) })),
     suggestions: suggestHandoffs(profiles, usage).map((s) => ({ fromId: s.from.id, toId: s.to.id, from: s.from.name, to: s.to.name, reason: s.reason })),
   };
@@ -30,6 +34,7 @@ export function board() {
 
 /** Opens a new terminal window with the profile's env set, running the vendor's own login. */
 function openLoginTerminal(cmd: string, env: Record<string, string>, cwd?: string, title = "Shiftwell") {
+  if (isHeadless()) return openHeadless(cmd, env, cwd, title);
   const fullEnv = { ...process.env, ...env };
   if (process.platform === "win32") {
     spawn("cmd.exe", ["/c", "start", title, "cmd.exe", "/k", cmd], { env: fullEnv, cwd, detached: true, stdio: "ignore" }).unref();
@@ -76,6 +81,21 @@ export function buildApp(opts: { openTerminal?: typeof openLoginTerminal; fetch?
       return reply.code(201).send(p);
     } catch (e) {
       return reply.code(409).send({ error: (e as Error).message });
+    }
+  });
+
+  // Edits name, plan and the pixel character. `character: null` goes back to the derived default.
+  app.patch<{ Params: { id: string }; Body: { name?: string; plan?: string; character?: unknown } }>("/api/profiles/:id", async (req, reply) => {
+    const body = req.body;
+    if (!body || typeof body !== "object" || Array.isArray(body)) return reply.code(400).send({ error: "Send a JSON object with name, plan or character" });
+    const { name, plan, character } = body;
+    if (name === undefined && plan === undefined && character === undefined) return reply.code(400).send({ error: "Nothing to change: send name, plan or character" });
+    try {
+      const p = updateProfile(req.params.id, { name, plan, character });
+      if (!p) return reply.code(404).send({ error: "not found" });
+      return { ...p, ...characterView(p) };
+    } catch (e) {
+      return reply.code(400).send({ error: (e as Error).message });
     }
   });
 

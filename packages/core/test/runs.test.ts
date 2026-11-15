@@ -75,6 +75,22 @@ describe("runs", () => {
     const g = createProfile({ name: "G", provider: "gemini" });
     expect(agentCommand(g, 'say "hi"')).toBe(`gemini -i "say 'hi'"`);
   });
+  it("lets SHIFTWELL_CLI_* swap the program (testing aid)", () => {
+    const c = createProfile({ name: "C", provider: "claude" });
+    const x = createProfile({ name: "X", provider: "codex" });
+    const g = createProfile({ name: "G", provider: "gemini" });
+    process.env.SHIFTWELL_CLI_CLAUDE = 'node "/tmp/fake claude.mjs"';
+    process.env.SHIFTWELL_CLI_CODEX = "fake-codex";
+    process.env.SHIFTWELL_CLI_GEMINI = "fake-gemini";
+    try {
+      expect(agentCommand(c, "hi")).toBe('node "/tmp/fake claude.mjs" "hi"');
+      expect(agentCommand(x)).toBe("fake-codex");
+      expect(agentCommand(g, "hi")).toBe('fake-gemini -i "hi"');
+    } finally {
+      delete process.env.SHIFTWELL_CLI_CLAUDE; delete process.env.SHIFTWELL_CLI_CODEX; delete process.env.SHIFTWELL_CLI_GEMINI;
+    }
+    expect(agentCommand(c)).toBe("claude");
+  });
   it("counts commits and distinct changed files, ignoring HANDOFF.md, and caches", () => {
     const a = createProfile({ name: "A", provider: "claude" });
     const run = startRun({ profileId: a.id, repo, task: "t" });

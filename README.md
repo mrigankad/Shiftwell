@@ -25,6 +25,17 @@ node apps/daemon/dist/server.js   # serves the UI at http://127.0.0.1:4520
 Development: `pnpm --filter @shiftwell/daemon dev` and `pnpm --filter @shiftwell/web dev` (UI on :4521).
 Set `SHIFTWELL_HOME` to keep test data out of `~/.shiftwell`.
 
+## Testing aids
+
+These exist so the whole loop can be tested without any real sign-in (`pnpm e2e`, see `e2e/`). Leave them unset in normal use.
+
+- `SHIFTWELL_CLI_CLAUDE`, `SHIFTWELL_CLI_CODEX`, `SHIFTWELL_CLI_GEMINI`: replace the program name Shiftwell types into a run's terminal. The value is used as is, so it can include arguments, for example `node "/path/e2e/fakes/fake-claude.mjs"`.
+- `SHIFTWELL_TERMINAL=headless`: the daemon (runs, handoffs, rotation, login) starts the command detached and hidden instead of opening a terminal window, and appends its output to `$SHIFTWELL_HOME/logs/<worktree folder>.log`.
+- `SHIFTWELL_ROTATE_MS`: how often the auto-rotation check runs (default 60000).
+- `SHIFTWELL_NO_NOTIFY=1` also silences the rotation toast.
+
+`pnpm e2e` builds core and the daemon, starts the daemon on a free port with a temporary home and git repo, and drives it with fake `claude` and `codex` CLIs (`e2e/fakes/`) that write transcripts, commit files and call the status line hook the way the real ones do. It then runs a headless Edge pass over every route (`e2e/ui.mjs`, screenshots in `e2e/out/`).
+
 ## Command line
 
 `apps/cli` builds the `shiftwell` command (no extra dependencies). After `pnpm -r build`, run it with `pnpm shiftwell <command>` or `node apps/cli/dist/main.js <command>`.

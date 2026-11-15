@@ -2,6 +2,13 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { shiftwellHome, sub } from "./paths.js";
+import {
+  parts as crewParts, skinTones, hairColors, hoodieColors, trimColors, eyeColors, themes, providerBrands, renderSvg,
+  type Recipe, type Provider as CrewProvider, type Accessory, type BodyType, type BrowStyle, type EyeStyle, type HairStyle,
+  type MouthStyle, type Scene, type Theme,
+} from "@shiftwell/crew";
+
+export type { Recipe as CharacterRecipe };
 
 export type Provider = "claude" | "codex" | "gemini" | "api";
 
@@ -45,6 +52,8 @@ export interface Profile {
   name: string;
   provider: Provider;
   plan?: string;
+  /** The account's pixel character (crew Recipe JSON). Absent until edited: see characterFor for the derived default. */
+  character?: Recipe;
   /** Only for provider "api": where Codex connects and which env var holds the key (the name, never the key). */
   api?: ApiConfig;
   /** Folder the vendor CLI uses as its home. Shiftwell never reads credential files inside it. */
@@ -81,6 +90,140 @@ export function createProfile(input: { name: string; provider: Provider; plan?: 
   const profile: Profile = { id, name, provider: input.provider, plan: input.plan, ...(api ? { api } : {}), configDir, createdAt: new Date().toISOString() };
   save([...all, profile]);
   return profile;
+}
+
+// ---- Characters ----------------------------------------------------------------------------------
+
+/** The crew art provider an account wears: its own CLI, or the preset it talks to. */
+export function crewProviderOf(profile: Pick<Profile, "provider" | "api">): CrewProvider {
+  if (profile.provider !== "api") return profile.provider;
+  switch (profile.api?.preset) {
+    case "kimi": case "grok": case "deepseek": case "nim": return profile.api.preset;
+    case "ollama-cloud": case "ollama": return "ollama";
+    default: return "custom";
+  }
+}
+
+/** FNV-1a, then mulberry32: a small deterministic stream of numbers from any string. */
+function seeded(seed: string): () => number {
+  let h = 2166136261;
+  for (let i = 0; i < seed.length; i++) { h ^= seed.charCodeAt(i); h = Math.imul(h, 16777619); }
+  let a = h >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const keys = <T extends object>(o: T) => Object.keys(o) as (keyof T & string)[];
+const BODIES = keys(crewParts.builds) as BodyType[];
+const HAIR_STYLES = keys(crewParts.hairs) as HairStyle[];
+const EYES = keys(crewParts.eyes) as EyeStyle[];
+const BROWS = keys(crewParts.brows) as BrowStyle[];
+const MOUTHS = keys(crewParts.mouths) as MouthStyle[];
+const ACCESSORIES = keys(crewParts.accessories) as Accessory[];
+const SCENES = keys(crewParts.backgrounds) as Scene[];
+const THEMES = keys(themes) as Theme[];
+
+/**
+ * A deterministic character from the account id and provider: the provider's hoodie, trim and logo,
+ * with hair, skin, face, accessories and backdrop varied by the id. The same account always gets the same one.
+ */
+export function defaultCharacter(profile: Pick<Profile, "id" | "name" | "provider" | "api">): Recipe {
+  const provider = crewProviderOf(profile);
+  const brand = providerBrands[provider];
+  const rnd = seeded(`${profile.id}:${provider}`);
+  const pick = <T,>(xs: readonly T[]): T => xs[Math.floor(rnd() * xs.length)]!;
+  const acc: Accessory[] = [];
+  if (rnd() < 0.55) acc.push(pick(ACCESSORIES));
+  return {
+    id: profile.id, name: profile.name, provider,
+    bodyType: pick(BODIES), skinTone: pick(keys(skinTones)),
+    hair: { style: pick(HAIR_STYLES), color: pick(keys(hairColors)) },
+    eyes: pick(EYES), eyeColor: pick(keys(eyeColors)), brows: pick(BROWS), mouth: pick(MOUTHS), blush: rnd() < 0.7,
+    hoodie: { color: brand.hoodie, trim: brand.trim },
+    logo: provider, accessories: acc,
+    background: { scene: pick(SCENES), theme: pick(THEMES) },
+  };
+}
+
+/** The recipe to show for a profile: the saved one, else the derived default. */
+export function characterFor(profile: Profile): Recipe {
+  return profile.character ?? defaultCharacter(profile);
+}
+
+const HEX = /^#[0-9a-fA-F]{6}$/;
+const fail = (m: string): never => { throw new Error(`Invalid character: ${m}`); };
+
+/** Checks an untrusted recipe against the crew tables and returns a clean copy. id and name come from the profile. */
+export function validateCharacter(input: unknown, profile: Pick<Profile, "id" | "name">): Recipe {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return fail("expected an object");
+  const r = input as Record<string, any>;
+  const oneOf = <T extends string>(v: unknown, list: readonly T[], what: string): T =>
+    typeof v === "string" && (list as readonly string[]).includes(v) ? (v as T) : fail(`${what} must be one of ${list.join(", ")}`);
+  const colour = (v: unknown, table: object, what: string): string => {
+    if (typeof v === "string" && (HEX.test(v) || Object.prototype.hasOwnProperty.call(table, v))) return v;
+    return fail(`${what} must be a palette name or a #RRGGBB colour`);
+  };
+  const hair = r.hair && typeof r.hair === "object" ? r.hair : fail("hair is required");
+  const hoodie = r.hoodie && typeof r.hoodie === "object" ? r.hoodie : fail("hoodie is required");
+  const bg = r.background && typeof r.background === "object" ? r.background : fail("background is required");
+  if (!Array.isArray(r.accessories)) fail("accessories must be a list");
+  const accessories = [...new Set((r.accessories as unknown[]).map((a) => oneOf(a, ACCESSORIES, "accessory")))];
+  const providers = keys(providerBrands);
+  const out: Recipe = {
+    id: profile.id, name: profile.name,
+    provider: oneOf(r.provider, providers, "provider"),
+    bodyType: oneOf(r.bodyType, BODIES, "bodyType"),
+    skinTone: oneOf(r.skinTone, keys(skinTones), "skinTone"),
+    hair: { style: oneOf(hair.style, HAIR_STYLES, "hair.style"), color: colour(hair.color, hairColors, "hair.color") },
+    eyes: oneOf(r.eyes, EYES, "eyes"),
+    brows: oneOf(r.brows, BROWS, "brows"),
+    mouth: oneOf(r.mouth, MOUTHS, "mouth"),
+    hoodie: { color: colour(hoodie.color, hoodieColors, "hoodie.color"), trim: colour(hoodie.trim, trimColors, "hoodie.trim") },
+    logo: oneOf(r.logo, providers, "logo"),
+    accessories,
+    background: { scene: oneOf(bg.scene, SCENES, "background.scene"), theme: oneOf(bg.theme, THEMES, "background.theme") },
+  };
+  if (r.eyeColor !== undefined) out.eyeColor = colour(r.eyeColor, eyeColors, "eyeColor");
+  if (r.blush !== undefined) { if (typeof r.blush !== "boolean") fail("blush must be true or false"); out.blush = r.blush; }
+  if (r.accent !== undefined) { if (typeof r.accent !== "string" || !HEX.test(r.accent)) fail("accent must be a #RRGGBB colour"); out.accent = r.accent; }
+  try { renderSvg(out); } catch (e) { fail((e as Error).message); }
+  return out;
+}
+
+/**
+ * Updates the fields a user may edit. `character: null` clears the saved one, so the derived default shows again.
+ * Returns undefined when there is no such profile; throws on invalid input.
+ */
+export function updateProfile(id: string, patch: { name?: string; plan?: string; character?: unknown }): Profile | undefined {
+  const all = listProfiles();
+  const i = all.findIndex((p) => p.id === id);
+  if (i < 0) return undefined;
+  const next: Profile = { ...all[i]! };
+  if (patch.name !== undefined) {
+    if (typeof patch.name !== "string" || !patch.name.trim()) throw new Error("Profile name is required");
+    const name = patch.name.trim();
+    if (name.length > 60) throw new Error("Profile name is too long (60 characters at most)");
+    if (all.some((p) => p.id !== id && p.name.toLowerCase() === name.toLowerCase())) throw new Error(`A profile called "${name}" already exists`);
+    next.name = name;
+  }
+  if (patch.plan !== undefined) {
+    if (typeof patch.plan !== "string") throw new Error("Plan must be text");
+    const plan = patch.plan.trim();
+    if (plan.length > 60) throw new Error("Plan is too long (60 characters at most)");
+    if (plan) next.plan = plan; else delete next.plan;
+  }
+  if (patch.character === null) delete next.character;
+  else if (patch.character !== undefined) next.character = validateCharacter(patch.character, next);
+  // A renamed account keeps its recipe's name in step.
+  if (next.character) next.character = { ...next.character, name: next.name };
+  all[i] = next;
+  save(all);
+  return next;
 }
 
 function validateApi(a: ApiConfig | undefined): ApiConfig {
