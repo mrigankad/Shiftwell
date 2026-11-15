@@ -38,12 +38,13 @@ const update = (id: string, patch: Partial<Run>) => save(listRuns().map((r) => (
 const git = (cwd: string, ...args: string[]) =>
   execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
 
-/** The interactive CLI for a profile, with an optional first prompt. Null for API-key profiles. */
+/** The interactive CLI for a profile, with an optional first prompt. API profiles run Codex too, configured through CODEX_HOME. */
 export function agentCommand(profile: Profile, prompt?: string): string | null {
   const q = prompt ? ` "${prompt.replace(/"/g, "'")}"` : "";
   switch (profile.provider) {
     case "claude": return `claude${q}`;
-    case "codex": return `codex${q}`;
+    case "codex":
+    case "api": return `codex${q}`;
     case "gemini": return prompt ? `gemini -i${q}` : "gemini";
     default: return null;
   }
@@ -63,7 +64,7 @@ function checkTaskAndRepo(rawRepo: string | undefined, rawTask: string | undefin
 function checkProfile(profileId: string): Profile {
   const profile = getProfile(profileId);
   if (!profile) throw new Error("Unknown account");
-  if (!agentCommand(profile)) throw new Error("API key accounts cannot run a CLI agent yet");
+  if (!agentCommand(profile)) throw new Error("This account has no CLI agent to run");
   return profile;
 }
 
@@ -161,7 +162,7 @@ export function handOff(runId: string, toProfileId: string, reason?: string): { 
   const to = getProfile(toProfileId);
   if (!from || !to) throw new Error("Unknown account");
   if (to.id === from.id) throw new Error("Pick a different account");
-  if (!agentCommand(to)) throw new Error("API key accounts cannot run a CLI agent yet");
+  if (!agentCommand(to)) throw new Error("This account has no CLI agent to run");
   const note = handoffNote(run, from, to, reason);
   writeFileSync(join(run.worktree, "HANDOFF.md"), note);
   const now = new Date().toISOString();

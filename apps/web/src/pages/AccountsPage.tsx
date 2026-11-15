@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { api, type Account } from "../api";
+import { api, type Account, type CheckResult } from "../api";
 import { CrewAvatar } from "../crew";
 import { EmptyState, PageTitle, STATE_PILL, type PageCtx } from "./shared";
 
@@ -60,6 +60,47 @@ function UsageChart({ readings, label }: { readings: Reading[]; label: string })
   );
 }
 
+function ApiDetails({ a }: { a: Account }) {
+  const cfg = a.api;
+  const [state, setState] = useState<"idle" | "busy" | CheckResult>("idle");
+  if (!cfg) return null;
+  const test = async () => {
+    setState("busy");
+    try { setState(await api.checkProfile(a.id)); }
+    catch (e) { setState({ ok: false, error: (e as Error).message }); }
+  };
+  const row = (k: string, v: string) => (
+    <div className="flex gap-2"><span className="w-[88px] shrink-0 text-muted">{k}</span><span className="min-w-0 select-text break-all text-body">{v}</span></div>
+  );
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1 text-[13px]">
+        {row("Preset", cfg.preset)}
+        {row("Model", cfg.model)}
+        {row("Base URL", cfg.baseUrl)}
+        {row("Key variable", cfg.keyEnv)}
+        <div className="flex gap-2">
+          <span className="w-[88px] shrink-0 text-muted">Key</span>
+          {a.keyPresent === undefined ? <span className="text-body">Unknown</span>
+            : a.keyPresent ? <span className="inline-flex items-center gap-2 font-bold text-pass"><span className="size-2 rounded-full bg-pass" />Key set</span>
+            : <span className="inline-flex items-center gap-2 font-bold text-warn"><span className="size-2 rounded-full bg-warn" />Key missing: set {cfg.keyEnv}</span>}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" onClick={test} disabled={state === "busy"} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface disabled:cursor-wait disabled:opacity-60">
+          {state === "busy" && <span aria-hidden className="size-3.5 animate-spin rounded-full border-2 border-line border-t-action" />}
+          {state === "busy" ? "Testing..." : "Test connection"}
+        </button>
+        <span role="status" className="text-[13px]">
+          {state !== "idle" && state !== "busy" && (state.ok
+            ? <span className="font-bold text-pass">Connected{typeof state.models === "number" ? `, ${state.models} ${state.models === 1 ? "model" : "models"}` : ""}</span>
+            : <span className="font-bold text-fail">{state.error ?? "Could not connect"}</span>)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function AccountCard({ a, ctx }: { a: Account; ctx: PageCtx }) {
   const [hist, setHist] = useState<Reading[] | null | "error">(null);
   const stamp = a.usage.latest?.at;
@@ -76,7 +117,7 @@ function AccountCard({ a, ctx }: { a: Account; ctx: PageCtx }) {
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-line bg-card p-5">
       <div className="flex items-center gap-3">
-        <CrewAvatar provider={a.provider} size={40} state={a.usage.state} />
+        <CrewAvatar provider={a.provider} preset={a.api?.preset} size={40} state={a.usage.state} />
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-[17px] font-bold">{a.name}</span>
           <span className="text-xs text-muted">{a.plan || "No plan set"} · {a.provider}</span>
@@ -90,6 +131,8 @@ function AccountCard({ a, ctx }: { a: Account; ctx: PageCtx }) {
           <div className="flex gap-2"><span className="w-[88px] shrink-0 text-muted">Created</span><span className="text-body">{new Date(created).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })}</span></div>
         )}
       </div>
+
+      {a.provider === "api" && <ApiDetails a={a} />}
 
       <div className="flex flex-col gap-1.5">
         <span className="text-[13px] font-bold">{label}</span>

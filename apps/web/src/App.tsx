@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, subscribe, type Account, type Board, type Provider, type Run } from "./api";
+import { api, subscribe, type Account, type Board, type CreateProfileInput, type Provider, type Run } from "./api";
 import { Mark } from "./crew";
 import { AddAccountDialog } from "./AddAccountDialog";
 import { StartRunDialog, type StartInput } from "./StartRunDialog";
@@ -93,12 +93,13 @@ export function App() {
   const runs = board?.runs ?? [];
   const activeCount = runs.filter((r) => r.status === "active").length;
   const nameOf = (id: string) => accounts.find((a) => a.id === id)?.name ?? "Removed account";
+  const presetOf = (id: string) => accounts.find((a) => a.id === id)?.api?.preset;
   const providerOf = (id: string): Provider => accounts.find((a) => a.id === id)?.provider ?? "api";
 
   const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); setToast(ok); } catch (e) { setToast((e as Error).message); } };
 
   const ctx: PageCtx = {
-    accounts, runs, nameOf, providerOf,
+    accounts, runs, nameOf, providerOf, presetOf,
     handOff: (run: Run, toId: string, reason?: string) =>
       act(() => api.handOff(run.id, toId, reason), `Handed off to ${nameOf(toId)}. Its CLI opened in the same worktree with HANDOFF.md.`),
     openRun: (r) => act(() => api.openRun(r.id), `Opened ${nameOf(r.profileId)} in the run's worktree`),
@@ -143,7 +144,7 @@ export function App() {
       {adding && (
         <AddAccountDialog
           onClose={() => setAdding(false)}
-          onCreate={async (input: { name: string; provider: Provider; plan?: string }) => {
+          onCreate={async (input: CreateProfileInput) => {
             const p = await api.createProfile(input);
             setAdding(false);
             setToast(`${p.name} added. Next: sign in from its row.`);

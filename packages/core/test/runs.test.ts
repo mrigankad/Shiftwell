@@ -35,9 +35,8 @@ describe("runs", () => {
   });
   it("rejects bad input", () => {
     const a = createProfile({ name: "A", provider: "claude" });
-    const k = createProfile({ name: "K", provider: "api" });
     expect(() => startRun({ profileId: a.id, repo: tmpdir(), task: "x" })).toThrow();
-    expect(() => startRun({ profileId: k.id, repo, task: "x" })).toThrow("API key");
+    expect(() => startRun({ profileId: "nope", repo, task: "x" })).toThrow("Unknown account");
     expect(() => startRun({ profileId: a.id, repo, task: "  " })).toThrow("Describe");
   });
   it("fans out one task to several accounts, each in its own worktree", () => {
@@ -56,16 +55,21 @@ describe("runs", () => {
   it("creates nothing when fan-out validation fails", () => {
     const a = createProfile({ name: "A", provider: "claude" });
     const b = createProfile({ name: "B", provider: "codex" });
-    const k = createProfile({ name: "K", provider: "api" });
     const many = Array.from({ length: 7 }, () => a.id);
     const bad: [string[], string, string][] = [
       [[], repo, "x"], [many, repo, "x"], [[a.id, a.id], repo, "x"], [[a.id, "nope"], repo, "x"],
-      [[a.id, k.id], repo, "x"], [[a.id, b.id], tmpdir(), "x"], [[a.id, b.id], repo, "  "],
+      [[a.id, b.id], tmpdir(), "x"], [[a.id, b.id], repo, "  "],
     ];
     for (const [profileIds, r, task] of bad) expect(() => startRuns({ profileIds, repo: r, task })).toThrow();
     expect(listRuns()).toEqual([]);
     expect(git("worktree", "list").trim().split("\n")).toHaveLength(1);
     expect(git("branch", "--list", "shiftwell/*").trim()).toBe("");
+  });
+  it("runs an api account through codex", () => {
+    const k = createProfile({ name: "K", provider: "api", api: { preset: "deepseek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat", keyEnv: "DEEPSEEK_API_KEY" } });
+    expect(agentCommand(k, "hi")).toBe('codex "hi"');
+    expect(startRun({ profileId: k.id, repo, task: "x" }).profileId).toBe(k.id);
+    expect(startRuns({ profileIds: [k.id], repo, task: "y" }).runs).toHaveLength(1);
   });
   it("builds CLI commands with the first prompt", () => {
     const g = createProfile({ name: "G", provider: "gemini" });

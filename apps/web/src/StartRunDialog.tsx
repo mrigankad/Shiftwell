@@ -16,8 +16,7 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
   onClose: () => void;
   onStart: (input: StartInput) => Promise<void>;
 }) {
-  const usable = accounts
-    .filter((a) => a.provider !== "api")
+  const usable = [...accounts]
     .sort((x, y) => rank(x) - rank(y));
   const [profileId, setProfileId] = useState(usable.find((a) => a.usage.state !== "out")?.id ?? usable[0]?.id ?? "");
   const [mode, setMode] = useState<"one" | "many">("one");
@@ -48,7 +47,9 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
 
   const toggle = (id: string) => setPicked((p) => p.includes(id) ? p.filter((x) => x !== id) : p.length < MAX_PARALLEL ? [...p, id] : p);
   const many = mode === "many";
-  const ready = many ? picked.length >= 2 : !!profileId;
+  const selected = many ? usable.filter((a) => picked.includes(a.id)) : usable.filter((a) => a.id === profileId);
+  const missing = selected.filter((a) => a.provider === "api" && a.keyPresent === false);
+  const ready = missing.length === 0 && (many ? picked.length >= 2 : !!profileId);
   const input = "rounded-lg border border-line px-3 py-2.5 text-[15px] outline-none focus:border-action";
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-6" onMouseDown={onClose}>
@@ -60,7 +61,7 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
         </div>
 
         {usable.length === 0 ? (
-          <p className="rounded-lg bg-surface px-3 py-3 text-sm text-body">Add a Claude Code, Codex or Gemini account first. API key accounts cannot run a CLI agent yet.</p>
+          <p className="rounded-lg bg-surface px-3 py-3 text-sm text-body">Add an account first.</p>
         ) : (
           <>
             <Segmented label="Run mode" value={mode} onChange={setMode} options={[{ id: "one", label: "One account" }, { id: "many", label: "Several in parallel" }]} />
@@ -78,11 +79,12 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
                 const body = (
                   <>
                     {many && <CheckBox checked={on} onChange={() => toggle(a.id)} disabled={full} />}
-                    <CrewAvatar provider={a.provider} size={32} state={a.usage.state} />
+                    <CrewAvatar provider={a.provider} preset={a.api?.preset} size={32} state={a.usage.state} />
                     <span className="flex flex-1 flex-col">
                       <span className="text-[15px] font-bold">{a.name}</span>
                       <span className="text-xs text-body">{roomText(a)}</span>
                     </span>
+                    {a.provider === "api" && a.keyPresent === false && <span className="rounded-full bg-warn-soft px-2.5 py-0.5 text-xs font-bold text-warn">Key missing</span>}
                     {out && <span className="rounded-full bg-fail-soft px-2.5 py-0.5 text-xs font-bold text-fail">Out</span>}
                   </>
                 );
@@ -105,6 +107,12 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
           <span className="text-sm font-bold">Task</span>
           <textarea ref={taskRef} value={task} onChange={(e) => setTask(e.target.value)} rows={3} placeholder="Add rate limiting to the login route and cover it with tests" className={`${input} resize-none`} />
         </label>
+
+        {missing.length > 0 && (
+          <p className="rounded-lg bg-warn-soft px-3 py-2 text-sm text-warn">
+            {missing.map((a) => `${a.name} needs ${a.api?.keyEnv ?? "its key variable"}`).join(", ")}. Set it in the environment, then restart Shiftwell.
+          </p>
+        )}
 
         {error && <p className="rounded-lg bg-fail-soft px-3 py-2 text-sm font-bold text-fail">{error}</p>}
 

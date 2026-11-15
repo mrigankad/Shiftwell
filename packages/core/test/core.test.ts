@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import {
-  createProfile, listProfiles, removeProfile, envFor,
+  createProfile, installApiProvider, loginCommand, apiPresets, listProfiles, removeProfile, envFor,
   installClaudeStatusHook, hookPath, usageFor, stateFor, forecastMinutes, suggestHandoffs, sub,
 } from "../src/index.js";
 
@@ -93,5 +93,34 @@ describe("advisor", () => {
     const s = suggestHandoffs(listProfiles(), usage);
     expect(s).toHaveLength(1);
     expect(s[0].to.name).toBe("Claude C");
+  });
+});
+
+describe("api profiles", () => {
+  const api = { preset: "deepseek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat", keyEnv: "DEEPSEEK_API_KEY" };
+  it("requires valid settings", () => {
+    expect(() => createProfile({ name: "A", provider: "api" })).toThrow();
+    expect(() => createProfile({ name: "A", provider: "api", api: { ...api, keyEnv: "lower-case" } })).toThrow("key variable");
+    expect(() => createProfile({ name: "A", provider: "api", api: { ...api, baseUrl: "http://x.test/v1" } })).toThrow("https");
+    expect(listProfiles()).toEqual([]);
+  });
+  it("writes config.toml without a key, keeping other settings", () => {
+    const p = createProfile({ name: "Deep", provider: "api", api });
+    expect(envFor(p)).toEqual({ CODEX_HOME: p.configDir });
+    expect(loginCommand(p)).toBeNull();
+    writeFileSync(join(p.configDir, "config.toml"), 'model = "old"\nmodel_provider = "old"\napproval_policy = "never"\n\n[model_providers.shiftwell]\nname = "stale"\n\n[projects."x"]\ntrust = true\n');
+    installApiProvider(p);
+    const t = readFileSync(join(p.configDir, "config.toml"), "utf8");
+    expect(t).toContain('model = "deepseek-chat"');
+    expect(t).toContain('model_provider = "shiftwell"');
+    expect(t).toContain('approval_policy = "never"');
+    expect(t).toContain('[projects."x"]');
+    expect(t).not.toContain("stale");
+    expect(t).not.toContain('"old"');
+    expect(t).toContain('[model_providers.shiftwell]\nname = "Deep"\nbase_url = "https://api.deepseek.com/v1"\nenv_key = "DEEPSEEK_API_KEY"\nwire_api = "responses"');
+    expect(t.match(/\[model_providers\.shiftwell\]/g)).toHaveLength(1);
+  });
+  it("has presets", () => {
+    expect(apiPresets.map((x) => x.id)).toEqual(["deepseek", "kimi", "grok", "nim", "ollama-cloud", "custom"]);
   });
 });

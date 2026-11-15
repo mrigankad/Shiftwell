@@ -2,11 +2,13 @@ import type { Provider, State } from "./api";
 
 /** Index of each provider's character in /crew.png (1776 x 592, six tiles). */
 const CREW_INDEX: Record<Provider, number> = { claude: 0, codex: 1, gemini: 2, api: 5 };
+/** Tiles for API key presets. TODO: nim, ollama-cloud and custom share the deepseek tile until they get their own art. */
+const PRESET_INDEX: Record<string, number> = { kimi: 3, grok: 4, deepseek: 5, nim: 5, "ollama-cloud": 5, custom: 5 };
 const TILE = 285;
 
-export function CrewAvatar({ provider, size = 34, state }: { provider: Provider; size?: number; state?: State }) {
+export function CrewAvatar({ provider, preset, size = 34, state }: { provider: Provider; preset?: string; size?: number; state?: State }) {
   const s = size / TILE;
-  const i = CREW_INDEX[provider];
+  const i = provider === "api" && preset ? (PRESET_INDEX[preset] ?? CREW_INDEX.api) : CREW_INDEX[provider];
   const dim = state === "out" ? "grayscale(0.7) brightness(0.8)" : state === "low" ? "saturate(0.6)" : undefined;
   return (
     <div

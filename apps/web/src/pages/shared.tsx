@@ -46,6 +46,7 @@ export interface PageCtx {
   runs: Run[];
   nameOf: (id: string) => string;
   providerOf: (id: string) => Provider;
+  presetOf: (id: string) => string | undefined;
   handOff: (run: Run, toId: string, reason?: string) => void;
   openRun: (run: Run) => void;
   finishRun: (run: Run) => void;
@@ -59,7 +60,7 @@ export interface PageCtx {
 
 export function runRow(ctx: PageCtx, r: Run): ReactNode {
   return (
-    <RunRow key={r.id} run={r} name={ctx.nameOf(r.profileId)} provider={ctx.providerOf(r.profileId)} accounts={ctx.accounts}
+    <RunRow key={r.id} run={r} name={ctx.nameOf(r.profileId)} provider={ctx.providerOf(r.profileId)} preset={ctx.presetOf(r.profileId)} accounts={ctx.accounts}
       fromName={r.fromRunId ? ctx.nameOf(ctx.runs.find((x) => x.id === r.fromRunId)?.profileId ?? "") : undefined}
       onOpen={() => ctx.openRun(r)} onFinish={() => ctx.finishRun(r)} onHandOff={(toId) => ctx.handOff(r, toId)} />
   );
@@ -91,13 +92,13 @@ export function EmptyState({ title, body, action }: { title: string; body: strin
   );
 }
 
-export function RunRow({ run, name, provider, fromName, accounts, onOpen, onFinish, onHandOff }: {
-  run: Run; name: string; provider: Provider; fromName?: string; accounts: Account[];
+export function RunRow({ run, name, provider, preset, fromName, accounts, onOpen, onFinish, onHandOff }: {
+  run: Run; name: string; provider: Provider; preset?: string; fromName?: string; accounts: Account[];
   onOpen: () => void; onFinish: () => void; onHandOff: (toId: string) => void;
 }) {
   const [picking, setPicking] = useState(false);
   const pill = RUN_PILL[run.status];
-  const targets = accounts.filter((a) => a.id !== run.profileId && a.provider !== "api");
+  const targets = accounts.filter((a) => a.id !== run.profileId);
   useEffect(() => {
     if (!picking) return;
     const close = (e: KeyboardEvent) => { if (e.key === "Escape") setPicking(false); };
@@ -108,7 +109,7 @@ export function RunRow({ run, name, provider, fromName, accounts, onOpen, onFini
   const changeText = ch ? ` · ${ch.commits} ${ch.commits === 1 ? "commit" : "commits"}, ${ch.files} ${ch.files === 1 ? "file" : "files"}` : "";
   return (
     <div className="flex items-center gap-4 border-b border-row px-4 py-3 last:border-b-0">
-      <CrewAvatar provider={provider} size={32} />
+      <CrewAvatar provider={provider} preset={preset} size={32} />
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-[15px] font-bold">{run.task}</span>
         <span className="truncate text-xs text-muted">
@@ -131,7 +132,7 @@ export function RunRow({ run, name, provider, fromName, accounts, onOpen, onFini
             {targets.map((a) => (
               <button role="menuitem" key={a.id} onClick={() => { setPicking(false); onHandOff(a.id); }}
                 className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface">
-                <CrewAvatar provider={a.provider} size={24} state={a.usage.state} />
+                <CrewAvatar provider={a.provider} preset={a.api?.preset} size={24} state={a.usage.state} />
                 <span className="flex-1 font-bold">{a.name}</span>
                 <span className="text-xs text-muted">{STATE_PILL[a.usage.state].label}</span>
               </button>

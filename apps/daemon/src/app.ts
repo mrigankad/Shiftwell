@@ -8,7 +8,7 @@ import {
   listProfiles, createProfile, removeProfile, getProfile, envFor, loginCommand,
   installClaudeStatusHook, installGeminiTelemetry, usageFor, suggestHandoffs, type Provider, type Usage,
   listRuns, startRun, startRuns, runDiffStat, handOff, finishRun, agentCommand, HANDOFF_PROMPT, readHandoffNote, readSamples,
-  runChanges, cachedRunChanges, pruneRuns,
+  runChanges, cachedRunChanges, pruneRuns, apiPresets, installApiProvider, type ApiConfig,
 } from "@shiftwell/core";
 
 const PROVIDERS: Provider[] = ["claude", "codex", "gemini", "api"];
@@ -18,7 +18,7 @@ export function board() {
   const usage = new Map<string, Usage>(profiles.map((p) => [p.id, usageFor(p)]));
   return {
     generatedAt: new Date().toISOString(),
-    accounts: profiles.map((p) => ({ ...p, usage: usage.get(p.id)!, loginCommand: loginCommand(p) })),
+    accounts: profiles.map((p) => ({ ...p, ...(p.api ? { keyPresent: !!process.env[p.api.keyEnv] } : {}), usage: usage.get(p.id)!, loginCommand: loginCommand(p) })),
     runs: listRuns().slice(-30).reverse().map((r) => ({ ...r, changes: r.status === "active" ? runChanges(r) : cachedRunChanges(r) })),
     suggestions: suggestHandoffs(profiles, usage).map((s) => ({ fromId: s.from.id, toId: s.to.id, from: s.from.name, to: s.to.name, reason: s.reason })),
   };
@@ -37,20 +37,23 @@ function openLoginTerminal(cmd: string, env: Record<string, string>, cwd?: strin
   }
 }
 
-export function buildApp(opts: { openTerminal?: typeof openLoginTerminal } = {}) {
+export function buildApp(opts: { openTerminal?: typeof openLoginTerminal; fetch?: typeof fetch } = {}) {
   const app = Fastify({ logger: false });
   const openTerminal = opts.openTerminal ?? openLoginTerminal;
+  const doFetch = opts.fetch ?? fetch;
 
   app.get("/api/health", async () => ({ ok: true }));
   app.get("/api/board", async () => board());
+  app.get("/api/presets", async () => apiPresets);
 
-  app.post<{ Body: { name?: string; provider?: Provider; plan?: string } }>("/api/profiles", async (req, reply) => {
-    const { name, provider, plan } = req.body ?? {};
+  app.post<{ Body: { name?: string; provider?: Provider; plan?: string; api?: ApiConfig } }>("/api/profiles", async (req, reply) => {
+    const { name, provider, plan, api } = req.body ?? {};
     if (!name || !provider || !PROVIDERS.includes(provider)) return reply.code(400).send({ error: "name and a valid provider are required" });
     try {
-      const p = createProfile({ name, provider, plan });
+      const p = createProfile({ name, provider, plan, api });
       if (p.provider === "claude") installClaudeStatusHook(p);
       if (p.provider === "gemini") installGeminiTelemetry(p);
+      if (p.provider === "api") installApiProvider(p);
       return reply.code(201).send(p);
     } catch (e) {
       return reply.code(409).send({ error: (e as Error).message });
@@ -68,6 +71,32 @@ export function buildApp(opts: { openTerminal?: typeof openLoginTerminal } = {})
     if (!cmd) return reply.code(400).send({ error: "This provider has no CLI login" });
     openTerminal(cmd, envFor(p), undefined, `Shiftwell login: ${p.name}`);
     return { ok: true, command: cmd };
+  });
+
+  // Calls GET {baseUrl}/models with the key from the env var. The key and the response body are never returned.
+  app.post<{ Params: { id: string } }>("/api/profiles/:id/check", async (req, reply) => {
+    const p = getProfile(req.params.id);
+    if (!p) return reply.code(404).send({ error: "not found" });
+    if (!p.api) return reply.code(400).send({ error: "Only API accounts can be checked" });
+    const key = process.env[p.api.keyEnv];
+    if (!key) return { ok: false, error: `${p.api.keyEnv} is not set in the environment the daemon runs in` };
+    try {
+      const res = await doFetch(`${p.api.baseUrl.replace(/\/+$/, "")}/models`, {
+        headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.status === 401 || res.status === 403) return { ok: false, error: `The provider rejected the key (HTTP ${res.status})` };
+      if (!res.ok) return { ok: false, error: `The provider answered HTTP ${res.status}` };
+      let models: number | undefined;
+      try {
+        const j = (await res.json()) as { data?: unknown };
+        if (Array.isArray(j?.data)) models = j.data.length;
+      } catch { /* reachable but not JSON: still ok */ }
+      return models === undefined ? { ok: true } : { ok: true, models };
+    } catch (e) {
+      const n = (e as Error)?.name;
+      return { ok: false, error: n === "TimeoutError" || n === "AbortError" ? "The provider did not answer within 8 seconds" : "Could not reach the provider" };
+    }
   });
 
   const fail = (reply: any, e: unknown) => reply.code(400).send({ error: (e as Error).message });

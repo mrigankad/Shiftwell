@@ -9,7 +9,7 @@ function AccountRow({ a, onLogin, onRemove }: { a: Account; onLogin: () => void;
   return (
     <div className="group flex items-center gap-4 border-b border-row px-4 py-3 last:border-b-0">
       <div className="flex w-[200px] shrink-0 items-center gap-2.5">
-        <CrewAvatar provider={a.provider} state={u.state} />
+        <CrewAvatar provider={a.provider} preset={a.api?.preset} state={u.state} />
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-[15px] font-bold">{a.name}</span>
           <span className="text-xs text-muted">{a.plan || a.provider}</span>
@@ -22,6 +22,12 @@ function AccountRow({ a, onLogin, onRemove }: { a: Account; onLogin: () => void;
           <button onClick={onLogin} className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold text-ink hover:bg-surface">
             Sign in · {a.loginCommand}
           </button>
+        ) : a.provider === "api" && a.keyPresent !== undefined ? (
+          a.keyPresent ? (
+            <span className="inline-flex items-center gap-2 font-bold text-pass"><span className="size-2 rounded-full bg-pass" />Key set</span>
+          ) : (
+            <span className="inline-flex items-center gap-2 font-bold text-warn"><span className="size-2 shrink-0 rounded-full bg-warn" />Key missing: set {a.api?.keyEnv}</span>
+          )
         ) : (
           <span>API key account</span>
         )}

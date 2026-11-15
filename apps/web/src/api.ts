@@ -1,6 +1,11 @@
 export type Provider = "claude" | "codex" | "gemini" | "api";
 export type State = "unknown" | "room" | "on" | "low" | "out";
 
+export interface ApiConfig { preset: string; baseUrl: string; model: string; keyEnv: string }
+export interface Preset { id: string; label: string; baseUrl: string; keyEnv: string; defaultModel: string }
+export interface CreateProfileInput { name: string; provider: Provider; plan?: string; api?: ApiConfig }
+export interface CheckResult { ok: boolean; models?: number; error?: string }
+
 export interface Window { pct: number; resetsAt: number | null }
 export interface Account {
   id: string;
@@ -8,6 +13,8 @@ export interface Account {
   provider: Provider;
   plan?: string;
   configDir: string;
+  api?: ApiConfig;
+  keyPresent?: boolean;
   createdAt?: string;
   loginCommand: string | null;
   usage: {
@@ -39,8 +46,10 @@ const post = <T>(url: string, body: unknown) =>
   fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(json<T>);
 
 export const api = {
-  createProfile: (input: { name: string; provider: Provider; plan?: string }) =>
+  createProfile: (input: CreateProfileInput) =>
     fetch("/api/profiles", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }).then(json<Account>),
+  presets: () => fetch("/api/presets").then(json<Preset[]>),
+  checkProfile: (id: string) => post<CheckResult>(`/api/profiles/${id}/check`, {}),
   removeProfile: (id: string) => fetch(`/api/profiles/${id}`, { method: "DELETE" }).then(json),
   startRun: (input: { profileId: string; repo: string; task: string }) => post<Run>("/api/runs", input),
   handOff: (runId: string, toProfileId: string, reason?: string) => post<{ run: Run; note: string }>(`/api/runs/${runId}/handoff`, { toProfileId, reason }),

@@ -25,6 +25,21 @@ node apps/daemon/dist/server.js   # serves the UI at http://127.0.0.1:4520
 Development: `pnpm --filter @shiftwell/daemon dev` and `pnpm --filter @shiftwell/web dev` (UI on :4521).
 Set `SHIFTWELL_HOME` to keep test data out of `~/.shiftwell`.
 
+## Command line
+
+`apps/cli` builds the `shiftwell` command (no extra dependencies). After `pnpm -r build`, run it with `pnpm shiftwell <command>` or `node apps/cli/dist/main.js <command>`.
+
+```bash
+shiftwell start [--port 4520] [--no-open]   # start the daemon if needed, open the board
+shiftwell stop                              # stop the daemon that "start" launched
+shiftwell status [--json]                   # accounts, active runs, handoff suggestion
+shiftwell run "fix the login bug" --account "Claude A" --account "Codex A" --repo .
+shiftwell handoff <runId> --to "Codex A"
+shiftwell done <runId> [--remove-folder]
+```
+
+`start` logs to `$SHIFTWELL_HOME/daemon.log` (default `~/.shiftwell`) and keeps a pid file there. Colours are used only on a terminal and are off when `NO_COLOR` is set.
+
 ## How usage is read
 
 Creating a Claude Code profile writes a `statusLine` command into that profile's own
