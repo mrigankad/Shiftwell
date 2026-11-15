@@ -18,7 +18,11 @@ export interface Account {
   };
 }
 export interface Suggestion { fromId: string; toId: string; from: string; to: string; reason: string }
-export interface Board { generatedAt: string; accounts: Account[]; suggestions: Suggestion[] }
+export interface Run {
+  id: string; profileId: string; task: string; repo: string; worktree: string; branch: string;
+  startedAt: string; endedAt?: string; status: "active" | "handed-off" | "done"; fromRunId?: string;
+}
+export interface Board { generatedAt: string; accounts: Account[]; runs: Run[]; suggestions: Suggestion[] }
 
 async function json<T>(res: Response): Promise<T> {
   const body = await res.json().catch(() => ({}));
@@ -26,10 +30,17 @@ async function json<T>(res: Response): Promise<T> {
   return body as T;
 }
 
+const post = <T>(url: string, body: unknown) =>
+  fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(json<T>);
+
 export const api = {
   createProfile: (input: { name: string; provider: Provider; plan?: string }) =>
     fetch("/api/profiles", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }).then(json<Account>),
   removeProfile: (id: string) => fetch(`/api/profiles/${id}`, { method: "DELETE" }).then(json),
+  startRun: (input: { profileId: string; repo: string; task: string }) => post<Run>("/api/runs", input),
+  handOff: (runId: string, toProfileId: string, reason?: string) => post<{ run: Run; note: string }>(`/api/runs/${runId}/handoff`, { toProfileId, reason }),
+  finishRun: (runId: string) => post<Run>(`/api/runs/${runId}/finish`, {}),
+  openRun: (runId: string) => post<{ ok: true }>(`/api/runs/${runId}/open`, {}),
   openLogin: (id: string) => fetch(`/api/profiles/${id}/login`, { method: "POST" }).then(json<{ command: string }>),
 };
 

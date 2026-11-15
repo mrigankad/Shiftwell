@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   listProfiles, createProfile, removeProfile, getProfile, envFor, loginCommand,
   installClaudeStatusHook, installGeminiTelemetry, usageFor, suggestHandoffs, type Provider, type Usage,
+  listRuns, startRun, handOff, finishRun, agentCommand, HANDOFF_PROMPT,
 } from "@shiftwell/core";
 
 const PROVIDERS: Provider[] = ["claude", "codex", "gemini", "api"];
@@ -17,20 +18,21 @@ export function board() {
   return {
     generatedAt: new Date().toISOString(),
     accounts: profiles.map((p) => ({ ...p, usage: usage.get(p.id)!, loginCommand: loginCommand(p) })),
+    runs: listRuns().slice(-30).reverse(),
     suggestions: suggestHandoffs(profiles, usage).map((s) => ({ fromId: s.from.id, toId: s.to.id, from: s.from.name, to: s.to.name, reason: s.reason })),
   };
 }
 
 /** Opens a new terminal window with the profile's env set, running the vendor's own login. */
-function openLoginTerminal(cmd: string, env: Record<string, string>) {
+function openLoginTerminal(cmd: string, env: Record<string, string>, cwd?: string, title = "Shiftwell") {
   const fullEnv = { ...process.env, ...env };
   if (process.platform === "win32") {
-    spawn("cmd.exe", ["/c", "start", "Shiftwell login", "cmd.exe", "/k", cmd], { env: fullEnv, detached: true, stdio: "ignore" }).unref();
+    spawn("cmd.exe", ["/c", "start", title, "cmd.exe", "/k", cmd], { env: fullEnv, cwd, detached: true, stdio: "ignore" }).unref();
   } else if (process.platform === "darwin") {
     const exports = Object.entries(env).map(([k, v]) => `export ${k}='${v}';`).join(" ");
-    spawn("osascript", ["-e", `tell app "Terminal" to do script "${exports} ${cmd}"`], { detached: true, stdio: "ignore" }).unref();
+    spawn("osascript", ["-e", `tell app "Terminal" to do script "${cwd ? `cd '${cwd}'; ` : ""}${exports} ${cmd}"`], { detached: true, stdio: "ignore" }).unref();
   } else {
-    spawn("x-terminal-emulator", ["-e", `bash -lc '${cmd}; exec bash'`], { env: fullEnv, detached: true, stdio: "ignore" }).unref();
+    spawn("x-terminal-emulator", ["-e", `bash -lc '${cmd}; exec bash'`], { env: fullEnv, cwd, detached: true, stdio: "ignore" }).unref();
   }
 }
 
@@ -63,8 +65,42 @@ export function buildApp(opts: { openTerminal?: typeof openLoginTerminal } = {})
     if (!p) return reply.code(404).send({ error: "not found" });
     const cmd = loginCommand(p);
     if (!cmd) return reply.code(400).send({ error: "This provider has no CLI login" });
-    openTerminal(cmd, envFor(p));
+    openTerminal(cmd, envFor(p), undefined, `Shiftwell login: ${p.name}`);
     return { ok: true, command: cmd };
+  });
+
+  const fail = (reply: any, e: unknown) => reply.code(400).send({ error: (e as Error).message });
+
+  app.get("/api/runs", async () => listRuns());
+
+  app.post<{ Body: { profileId?: string; repo?: string; task?: string } }>("/api/runs", async (req, reply) => {
+    try {
+      const run = startRun({ profileId: req.body?.profileId ?? "", repo: req.body?.repo ?? "", task: req.body?.task ?? "" });
+      const p = getProfile(run.profileId)!;
+      openTerminal(agentCommand(p, run.task)!, envFor(p), run.worktree, `Shiftwell: ${p.name}`);
+      return reply.code(201).send(run);
+    } catch (e) { return fail(reply, e); }
+  });
+
+  app.post<{ Params: { id: string }; Body: { toProfileId?: string; reason?: string } }>("/api/runs/:id/handoff", async (req, reply) => {
+    try {
+      const { run, note } = handOff(req.params.id, req.body?.toProfileId ?? "", req.body?.reason);
+      const p = getProfile(run.profileId)!;
+      openTerminal(agentCommand(p, HANDOFF_PROMPT)!, envFor(p), run.worktree, `Shiftwell: ${p.name}`);
+      return { run, note };
+    } catch (e) { return fail(reply, e); }
+  });
+
+  app.post<{ Params: { id: string } }>("/api/runs/:id/finish", async (req, reply) => {
+    try { return finishRun(req.params.id); } catch (e) { return fail(reply, e); }
+  });
+
+  app.post<{ Params: { id: string } }>("/api/runs/:id/open", async (req, reply) => {
+    const run = listRuns().find((r) => r.id === req.params.id);
+    const p = run && getProfile(run.profileId);
+    if (!run || !p || run.status !== "active") return reply.code(404).send({ error: "No active run" });
+    openTerminal(agentCommand(p)!, envFor(p), run.worktree, `Shiftwell: ${p.name}`);
+    return { ok: true };
   });
 
   // Server-sent events: push the board every 5 s so the UI stays live.

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { api, subscribe, type Account, type Board, type Provider, type State } from "./api";
+import { api, subscribe, type Account, type Board, type Provider, type Run, type State } from "./api";
 import { CrewAvatar, Mark } from "./crew";
 import { AddAccountDialog } from "./AddAccountDialog";
+import { StartRunDialog } from "./StartRunDialog";
 
 const STATE_PILL: Record<State, { label: string; cls: string }> = {
   unknown: { label: "No data yet", cls: "bg-surface text-muted" },
@@ -101,6 +102,7 @@ export function App() {
   const [board, setBoard] = useState<Board | null>(null);
   const [connected, setConnected] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => subscribe(setBoard, setConnected), []);
@@ -112,6 +114,18 @@ export function App() {
     () => accounts.filter((a) => a.usage.runsOutInMinutes !== null).sort((x, y) => x.usage.runsOutInMinutes! - y.usage.runsOutInMinutes!)[0],
     [accounts],
   );
+  const runs = board?.runs ?? [];
+  const activeRuns = runs.filter((r) => r.status === "active");
+  const suggestedRun = suggestion && activeRuns.find((r) => r.profileId === suggestion.fromId);
+  const nameOf = (id: string) => accounts.find((a) => a.id === id)?.name ?? "Removed account";
+  const providerOf = (id: string): Provider => accounts.find((a) => a.id === id)?.provider ?? "api";
+
+  const handOff = async (run: Run, toId: string, reason?: string) => {
+    try { await api.handOff(run.id, toId, reason); setToast(`Handed off to ${nameOf(toId)}. Its CLI opened in the same worktree with HANDOFF.md.`); }
+    catch (e) { setToast((e as Error).message); }
+  };
+  const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); setToast(ok); } catch (e) { setToast((e as Error).message); } };
+
   const withRoom = accounts.filter((a) => a.usage.state === "room").length;
 
   const login = async (a: Account) => {
@@ -129,7 +143,10 @@ export function App() {
       <main className="flex flex-1 flex-col">
         <header className="flex h-[52px] items-center justify-between border-b border-line px-7">
           <span className="text-sm text-body">Shift board</span>
-          <button onClick={() => setAdding(true)} className="cursor-pointer rounded-lg bg-ink px-3.5 py-2 text-sm font-bold text-white hover:bg-black">Add account</button>
+          <div className="flex gap-2">
+            <button onClick={() => setAdding(true)} className="cursor-pointer rounded-lg border border-line px-3.5 py-2 text-sm font-bold hover:bg-surface">Add account</button>
+            <button onClick={() => setStarting(true)} disabled={accounts.length === 0} className="cursor-pointer rounded-lg bg-ink px-3.5 py-2 text-sm font-bold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-40">Start a run</button>
+          </div>
         </header>
 
         <div className="flex flex-col gap-5 px-7 py-6">
@@ -147,7 +164,13 @@ export function App() {
                 <span className="text-[20px] font-bold tracking-[-0.02em]">Move work from {suggestion.from} to {suggestion.to}?</span>
                 <span className="text-sm text-body">{suggestion.reason}</span>
               </div>
-              <span className="rounded-lg border border-[#F7D9C4] bg-white px-3 py-2 text-[13px] font-bold text-body">Handoff notes arrive in v0.2</span>
+              {suggestedRun ? (
+                <button onClick={() => handOff(suggestedRun, suggestion.toId, suggestion.reason)} className="shrink-0 cursor-pointer rounded-[10px] bg-action px-4 py-2.5 text-sm font-bold text-white hover:brightness-110">
+                  Hand off to {suggestion.to}
+                </button>
+              ) : (
+                <span className="max-w-[220px] text-[13px] text-body">{suggestion.from} has no active run. Start new work on {suggestion.to}.</span>
+              )}
             </div>
           )}
 
@@ -185,6 +208,23 @@ export function App() {
               </p>
             </section>
           )}
+          {runs.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-lg font-bold">Runs</h2>
+                <span className="text-sm text-body">{activeRuns.length} active</span>
+              </div>
+              <div className="rounded-xl border border-line">
+                {runs.map((r) => (
+                  <RunRow key={r.id} run={r} name={nameOf(r.profileId)} provider={providerOf(r.profileId)} accounts={accounts}
+                    fromName={r.fromRunId ? nameOf(runs.find((x) => x.id === r.fromRunId)?.profileId ?? "") : undefined}
+                    onOpen={() => act(() => api.openRun(r.id), `Opened ${nameOf(r.profileId)} in the run's worktree`)}
+                    onFinish={() => act(() => api.finishRun(r.id), "Run marked done. The worktree and branch stay for you to merge.")}
+                    onHandOff={(toId) => handOff(r, toId)} />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       </main>
 
@@ -199,9 +239,75 @@ export function App() {
         />
       )}
 
+      {starting && (
+        <StartRunDialog accounts={accounts} onClose={() => setStarting(false)}
+          onStart={async (input) => { const r = await api.startRun(input); setStarting(false); setToast(`Run started on ${r.branch}. The CLI opened in its worktree.`); }} />
+      )}
+
       {toast && (
         <div role="status" className="fixed bottom-6 right-6 rounded-xl bg-ink px-4 py-3 text-sm font-bold text-white shadow-xl">{toast}</div>
       )}
+    </div>
+  );
+}
+
+const RUN_PILL: Record<Run["status"], { label: string; cls: string }> = {
+  active: { label: "Active", cls: "bg-action-soft text-action" },
+  "handed-off": { label: "Handed off", cls: "bg-surface text-body" },
+  done: { label: "Done", cls: "bg-pass-soft text-pass" },
+};
+
+function ago(iso: string): string {
+  const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
+  return m < 60 ? `${m} min ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`;
+}
+
+function RunRow({ run, name, provider, fromName, accounts, onOpen, onFinish, onHandOff }: {
+  run: Run; name: string; provider: Provider; fromName?: string; accounts: Account[];
+  onOpen: () => void; onFinish: () => void; onHandOff: (toId: string) => void;
+}) {
+  const [picking, setPicking] = useState(false);
+  const pill = RUN_PILL[run.status];
+  const targets = accounts.filter((a) => a.id !== run.profileId && a.provider !== "api");
+  useEffect(() => {
+    if (!picking) return;
+    const close = (e: KeyboardEvent) => { if (e.key === "Escape") setPicking(false); };
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [picking]);
+  return (
+    <div className="flex items-center gap-4 border-b border-[#F0F0F3] px-4 py-3 last:border-b-0">
+      <CrewAvatar provider={provider} size={32} />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <span className="truncate text-[15px] font-bold">{run.task}</span>
+        <span className="truncate text-xs text-muted">
+          {name}{fromName ? ` · picked up from ${fromName}` : ""} · {run.branch} · {ago(run.startedAt)}
+        </span>
+      </div>
+      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${pill.cls}`}>{pill.label}</span>
+      <div className="relative flex w-[230px] shrink-0 justify-end gap-1.5">
+        {run.status === "active" && (
+          <>
+            <button onClick={onOpen} className="cursor-pointer rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold hover:bg-surface">Open</button>
+            <button onClick={() => setPicking((v) => !v)} disabled={targets.length === 0} aria-expanded={picking}
+              className="cursor-pointer rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40">Hand off</button>
+            <button onClick={onFinish} className="cursor-pointer rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold hover:bg-surface">Done</button>
+          </>
+        )}
+        {picking && (
+          <div role="menu" className="absolute right-0 top-10 z-10 flex w-[240px] flex-col gap-0.5 rounded-xl border border-line bg-white p-1.5 shadow-xl">
+            <span className="px-2 py-1 text-xs font-bold text-muted">Hand off to</span>
+            {targets.map((a) => (
+              <button role="menuitem" key={a.id} onClick={() => { setPicking(false); onHandOff(a.id); }}
+                className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface">
+                <CrewAvatar provider={a.provider} size={24} state={a.usage.state} />
+                <span className="flex-1 font-bold">{a.name}</span>
+                <span className="text-xs text-muted">{STATE_PILL[a.usage.state].label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

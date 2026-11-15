@@ -44,5 +44,6 @@ For Gemini profiles Shiftwell turns on the CLI's own local telemetry in that pro
 - [x] Shift board UI, add-account dialog, empty state
 - [x] Codex usage reader (`codex app-server`)
 - [x] Gemini daily request counter (CLI local telemetry)
-- [ ] Launching agents in git worktrees and handoff notes
+- [x] Runs: each task gets its own git worktree and `shiftwell/<id>` branch, the account's CLI opens there with the task
+- [x] Handoffs: writes `HANDOFF.md` (task, commits, uncommitted files, diff size) and opens the next account's CLI in the same worktree
 - [ ] Tauri shell, menu-bar widget, notifications
