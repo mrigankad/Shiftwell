@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Shiftwell shell; the UI is served by the local daemon and gets no IPC.",
+  "description": "Shiftwell shell; the UI is served by the local daemon and gets no IPC; only the local error page calls choose_repo.",
   "windows": ["main"],
-  "permissions": ["core:default"]
+  "permissions": ["core:default", "allow-choose-repo"]
 }

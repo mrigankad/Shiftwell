@@ -59,49 +59,116 @@ fn healthy() -> bool {
     agent().get(&format!("{}/api/health", base())).call().is_ok()
 }
 
-/// SHIFTWELL_REPO, else the nearest ancestor of the executable (or cwd) that contains the built daemon.
-fn find_repo() -> Option<PathBuf> {
-    let has = |p: &Path| p.join("apps/daemon/dist/server.js").exists();
+const DEFAULT_REPO: Option<&str> = option_env!("SHIFTWELL_REPO_DEFAULT");
+
+fn has_daemon(p: &Path) -> bool {
+    p.join("apps/daemon/dist/server.js").exists()
+}
+
+fn repo_file(app: &AppHandle) -> Option<PathBuf> {
+    app.path().app_config_dir().ok().map(|d| d.join("repo.txt"))
+}
+
+fn save_repo(app: &AppHandle, repo: &Path) {
+    if let Some(f) = repo_file(app) {
+        if let Some(d) = f.parent() {
+            let _ = std::fs::create_dir_all(d);
+        }
+        let _ = std::fs::write(f, repo.to_string_lossy().as_bytes());
+    }
+}
+
+/// SHIFTWELL_REPO, else the saved path, else an ancestor of the executable (or cwd), else the build-time default.
+/// A repo found this way is remembered in the app config dir.
+fn find_repo(app: &AppHandle) -> Option<PathBuf> {
     if let Ok(r) = std::env::var("SHIFTWELL_REPO") {
         let p = PathBuf::from(r);
-        return if has(&p) { Some(p) } else { None };
+        if has_daemon(&p) {
+            save_repo(app, &p);
+            return Some(p);
+        }
+        return None;
+    }
+    if let Some(f) = repo_file(app) {
+        if let Ok(t) = std::fs::read_to_string(f) {
+            let p = PathBuf::from(t.trim());
+            if has_daemon(&p) {
+                return Some(p);
+            }
+        }
     }
     let starts = [std::env::current_exe().ok(), std::env::current_dir().ok()];
     for s in starts.into_iter().flatten() {
         for a in s.ancestors() {
-            if has(a) {
+            if has_daemon(a) {
+                save_repo(app, a);
                 return Some(a.to_path_buf());
             }
+        }
+    }
+    if let Some(d) = DEFAULT_REPO {
+        let p = PathBuf::from(d);
+        if has_daemon(&p) {
+            save_repo(app, &p);
+            return Some(p);
         }
     }
     None
 }
 
-fn spawn_daemon() -> Result<Child, String> {
-    let repo = find_repo().ok_or("Could not find the Shiftwell daemon (apps/daemon/dist/server.js). Build it with `pnpm -r build` and set SHIFTWELL_REPO to the repository folder.")?;
-    let server = repo.join("apps/daemon/dist/server.js");
+fn node_command() -> Command {
     let mut cmd = Command::new("node");
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+    cmd
+}
+
+fn has_node() -> bool {
+    node_command()
+        .arg("--version")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+/// Startup failure; `kind` lets the error page pick its guidance and buttons.
+struct Fail {
+    kind: &'static str,
+    msg: String,
+}
+fn fail(kind: &'static str, msg: impl Into<String>) -> Fail {
+    Fail { kind, msg: msg.into() }
+}
+
+fn spawn_daemon(app: &AppHandle) -> Result<Child, Fail> {
+    if !has_node() {
+        return Err(fail("node", "Node.js was not found on PATH. Shiftwell needs Node 22 or newer to run its daemon."));
+    }
+    let repo = find_repo(app)
+        .ok_or_else(|| fail("repo", "Could not find the Shiftwell folder (the one containing apps/daemon/dist/server.js)."))?;
+    let server = repo.join("apps/daemon/dist/server.js");
+    let mut cmd = node_command();
     cmd.arg(&server)
         .current_dir(&repo)
         .env("SHIFTWELL_PORT", port().to_string())
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
-    }
-    cmd.spawn()
-        .map_err(|e| format!("Could not start Node ({e}). Install Node 22 and make sure `node` is on PATH."))
+    cmd.spawn().map_err(|e| fail("node", format!("Could not start Node ({e}). Install Node 22 and make sure `node` is on PATH.")))
 }
 
 /// Make sure a daemon answers; Err carries a user-facing message.
-fn ensure_daemon(app: &AppHandle) -> Result<(), String> {
+fn ensure_daemon(app: &AppHandle) -> Result<(), Fail> {
     if healthy() {
         return Ok(());
     }
-    let child = spawn_daemon()?;
+    let child = spawn_daemon(app)?;
     *app.state::<Daemon>().0.lock().unwrap() = Some(child);
     for _ in 0..40 {
         thread::sleep(Duration::from_millis(250));
@@ -110,11 +177,11 @@ fn ensure_daemon(app: &AppHandle) -> Result<(), String> {
         }
         if let Some(c) = app.state::<Daemon>().0.lock().unwrap().as_mut() {
             if let Ok(Some(st)) = c.try_wait() {
-                return Err(format!("The Shiftwell daemon exited right away ({st})."));
+                return Err(fail("other", format!("The Shiftwell daemon exited right away ({st}).")));
             }
         }
     }
-    Err("The Shiftwell daemon did not answer within 10 seconds.".into())
+    Err(fail("other", "The Shiftwell daemon did not answer within 10 seconds."))
 }
 
 fn encode(s: &str) -> String {
@@ -123,10 +190,10 @@ fn encode(s: &str) -> String {
         .collect()
 }
 
-fn create_window(app: &AppHandle, ok: Result<(), String>) {
-    let url = match &ok {
+fn create_window(app: &AppHandle, ok: &Result<(), Fail>) {
+    let url = match ok {
         Ok(()) => WebviewUrl::External(base().parse().unwrap()),
-        Err(m) => WebviewUrl::App(format!("error.html?{}", encode(m)).into()),
+        Err(f) => WebviewUrl::App(format!("error.html?k={}&m={}", f.kind, encode(&f.msg)).into()),
     };
     let w = WebviewWindowBuilder::new(app, "main", url)
         .title("Shiftwell")
@@ -159,6 +226,27 @@ fn toggle_window(app: &AppHandle) {
             show_window(app, None);
         }
     }
+}
+
+/// IPC for the error page: pick the repo folder, validate, remember it, start the daemon and load the app.
+#[tauri::command]
+async fn choose_repo(app: AppHandle) -> Result<(), String> {
+    use tauri_plugin_dialog::DialogExt;
+    let picked = app.dialog().file().set_title("Choose the Shiftwell folder").blocking_pick_folder();
+    let Some(path) = picked else { return Ok(()) };
+    let path = path.into_path().map_err(|e| e.to_string())?;
+    if !has_daemon(&path) {
+        return Err("That folder does not contain apps/daemon/dist/server.js. Pick the Shiftwell repository folder and build it first with `pnpm -r build`.".into());
+    }
+    save_repo(&app, &path);
+    let a = app.clone();
+    tauri::async_runtime::spawn_blocking(move || ensure_daemon(&a).map_err(|f| f.msg))
+        .await
+        .map_err(|e| e.to_string())??;
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.eval(&format!("window.location.replace('{}')", base()));
+    }
+    Ok(())
 }
 
 fn fetch_status() -> Status {
@@ -225,6 +313,8 @@ pub fn run() {
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_window(app, None)))
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![choose_repo])
         .manage(Daemon(Mutex::new(None)))
         .setup(|app| {
             let handle = app.handle().clone();
@@ -268,7 +358,7 @@ pub fn run() {
             thread::spawn(move || {
                 let res = ensure_daemon(&handle);
                 let ok = res.is_ok();
-                create_window(&handle, res);
+                create_window(&handle, &res);
                 loop {
                     if ok {
                         refresh_tray(&handle);

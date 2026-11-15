@@ -2,5 +2,20 @@
 <body style="margin:0;display:grid;place-items:center;height:100vh;background:#16181D;color:#fff;font-family:Segoe UI,sans-serif">
 <div style="max-width:560px;padding:24px"><h2 style="color:#FF5A1F;margin:0 0 12px">Shiftwell could not start</h2>
 <p id="m" style="line-height:1.5;white-space:pre-wrap"></p>
-<p style="opacity:.6;font-size:13px">Set SHIFTWELL_REPO to your Shiftwell checkout (with apps/daemon/dist built), make sure Node is on PATH, then restart.</p></div>
-<script>document.getElementById("m").textContent=decodeURIComponent(location.search.slice(1))</script></body>
+<p id="h" style="opacity:.6;font-size:13px;line-height:1.5"></p>
+<p id="e" style="color:#FF5A1F;font-size:13px;line-height:1.5"></p>
+<button id="b" style="display:none;background:#FF5A1F;color:#fff;border:0;border-radius:6px;padding:9px 16px;font:inherit;cursor:pointer">Choose folder</button>
+<a id="l" href="https://nodejs.org/" target="_blank" style="display:none;color:#FF5A1F">Download Node.js from nodejs.org</a></div>
+<script>
+var q=new URLSearchParams(location.search),k=q.get("k"),$=function(i){return document.getElementById(i)};
+$("m").textContent=q.get("m")||"";
+if(k==="node"){$("h").textContent="Install Node.js, then restart Shiftwell.";$("l").style.display="inline"}
+else{
+ $("h").textContent=k==="repo"?"Choose your Shiftwell repository folder (the one with apps/daemon/dist built by pnpm -r build). It is remembered for next time. You can also set SHIFTWELL_REPO.":"Make sure the daemon is built (pnpm -r build) and Node is on PATH, then restart. You can also choose the repository folder.";
+ $("b").style.display="inline-block";
+ $("b").onclick=function(){
+  $("e").textContent="";$("b").disabled=true;
+  window.__TAURI_INTERNALS__.invoke("choose_repo").then(function(){$("b").disabled=false},function(e){$("e").textContent=String(e);$("b").disabled=false});
+ };
+}
+</script></body>
