@@ -1,9 +1,94 @@
-# Shiftwell
+<p align="center">
+  <img src="docs/readme/01-hero.jpg" alt="Shiftwell: every AI plan, one control room. A pixel-art night office where the AI crew works at their desks." width="100%">
+</p>
 
-A local control room for people who pay for several AI coding plans. Each account
-runs the vendor's **official CLI** in its own profile folder; Shiftwell reads only
-the status line those CLIs emit and suggests handoffs when one account runs low.
-It never reads or stores login tokens.
+<h3 align="center">Every AI plan. One control room.</h3>
+
+<p align="center">
+  Shiftwell watches your Claude Code, Codex and Gemini accounts, plus Kimi, Grok, DeepSeek, NVIDIA NIM and Ollama,<br>
+  and hands the work to the one with room left. Local only. Official CLIs only. It never reads your tokens.
+</p>
+
+<p align="center">
+  <a href="https://mrigankad.github.io/Shiftwell/"><b>Website</b></a> ·
+  <a href="https://github.com/mrigankad/Shiftwell/releases"><b>Download</b></a> ·
+  <a href="#quick-start"><b>Quick start</b></a> ·
+  <a href="#safety-model"><b>Safety model</b></a>
+</p>
+
+<p align="center"><img src="docs/readme/02-stats.png" alt="8 providers, 16 crew characters, 3 official CLIs, 0 tokens read" width="100%"></p>
+
+## Why
+
+You pay for more than one AI coding plan. Each one has a 5-hour window and a weekly cap, and they run out at the worst moment. Logging in and out is slow, and switching loses the context.
+
+Shiftwell gives every account its own folder and runs the vendor's own CLI there. It reads the usage those CLIs already report, forecasts who runs dry, and moves the work, with a `HANDOFF.md` note, to the account that has room.
+
+<p align="center"><img src="docs/readme/03-shift-board.png" alt="Shift board: who runs dry before they do" width="100%"></p>
+<p align="center"><img src="docs/readme/04-handoffs.png" alt="Handoffs: pass the work, not the context" width="100%"></p>
+<p align="center"><img src="docs/readme/05-live-view.png" alt="Live view: watch any run from one tab" width="100%"></p>
+<p align="center"><img src="docs/readme/06-parallel-runs.png" alt="Parallel runs with a compare view" width="100%"></p>
+<p align="center"><img src="docs/readme/07-character-editor.png" alt="Character editor for each account's pixel worker" width="100%"></p>
+
+## Meet the crew
+
+Every account is a pixel worker in its company's hoodie. Hair, face, hoodie, logo and accessories are all editable, and the same recipe draws them in the app and in the designs.
+
+<p align="center"><img src="docs/readme/08-crew.png" alt="The 16 pixel crew characters with their provider logos" width="100%"></p>
+
+## Features
+
+| | |
+|---|---|
+| **Shift board** | 5-hour, weekly and daily usage for every account, burn-rate forecasts, reset calendar, live pixel shift floor |
+| **Handoffs** | One click (or opt-in automatic) move to the account with room, in the same git worktree, with `HANDOFF.md` |
+| **Runs** | Each task gets its own worktree and branch; fan one task out to up to 6 accounts and compare |
+| **Live view** | Follows each run from the CLI's own transcript: messages, tool calls, files touched |
+| **Rules and guardrails** | Route tasks to accounts, stop line, max parallel runs, blocked paths, quiet hours |
+| **Skills and memory** | Shared instructions synced to every CLI, per-repo notes carried across handoffs |
+| **Insights** | When you hit limits (heatmap), usage and cost estimates, a shareable weekly recap |
+| **Everywhere** | Desktop app with tray status, `shiftwell` CLI, notifications, Ctrl K palette, day and night themes |
+
+## How it works
+
+<p align="center"><img src="docs/readme/09-how-it-works.png" alt="Accounts with their own folders, official CLIs, the usage and transcript record, Shiftwell, the handoff" width="100%"></p>
+
+## Quick start
+
+<p align="center"><img src="docs/readme/10-quick-start.png" alt="Quick start steps" width="100%"></p>
+
+```bash
+pnpm install
+pnpm -r build
+pnpm shiftwell start        # starts the local service and opens the board
+```
+
+Then **Add account**, and **Sign in** from its row: the vendor's own login opens in that account's folder. Prefer a window? Build the desktop app with `pnpm --filter @shiftwell/desktop build`.
+
+## Safety model
+
+<p align="center"><img src="docs/readme/11-safety.png" alt="Official CLIs only, isolated folders, no tokens read, loopback only, auto-rotation off by default" width="100%"></p>
+
+- Only the vendors' **official CLIs** run your work, each in its **own config folder**.
+- Shiftwell **never opens or stores login tokens**. It reads status lines, usage reports and transcripts the CLIs write themselves.
+- The service binds to **127.0.0.1 only**.
+- **Auto-rotation is off** until you turn it on.
+
+## Providers
+
+<p align="center"><img src="docs/readme/12-providers.png" alt="Claude, Codex, Gemini, Kimi, Grok, DeepSeek, NVIDIA NIM, Ollama" width="100%"></p>
+
+## Roadmap
+
+<p align="center"><img src="docs/readme/13-roadmap.png" alt="Roadmap" width="100%"></p>
+
+## FAQ
+
+<p align="center"><img src="docs/readme/14-faq.png" alt="Frequently asked questions" width="100%"></p>
+
+---
+
+# Developer guide
 
 ## Stack
 
