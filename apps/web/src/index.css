@@ -59,3 +59,16 @@
 }
 
 body { @apply bg-page text-ink font-sans antialiased; }
+
+/* Scrollbars: thin, themed, and in the brand orange. */
+@layer base {
+  :root { --scrollbar-thumb: color-mix(in srgb, var(--color-shift) 55%, transparent); --scrollbar-thumb-hover: var(--color-shift); }
+  * { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) transparent; }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background-color: var(--scrollbar-thumb); border-radius: 999px; border: 3px solid transparent; background-clip: padding-box; }
+  *::-webkit-scrollbar-thumb:hover { background-color: var(--scrollbar-thumb-hover); }
+  *::-webkit-scrollbar-corner { background: transparent; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+}
