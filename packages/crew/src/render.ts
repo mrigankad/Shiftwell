@@ -1,6 +1,10 @@
 import { resolvePalette } from "./palette.js";
-import { accessories, backgrounds, blush, brows, builds, ears, eyes, hairs, head, logoPatches, mouths } from "./parts/index.js";
+import { accessories, backgrounds, blush, brows, builds, ears, eyes, hairs, head, logoPatches, logoPatches8, mouths } from "./parts/index.js";
 import { GRID, KEYS, LAYERS, type LayerName, type Palette, type Part, type Recipe, type Slot } from "./types.js";
+
+function recolour(p: Part, from: string, to: string): Part {
+  return { ...p, rows: p.rows.map((row) => row.replaceAll(from, to)) };
+}
 
 /** Which parts a recipe uses, per layer, in back-to-front layer order. */
 export function layerParts(r: Recipe): Record<LayerName, Part[]> {
@@ -12,7 +16,7 @@ export function layerParts(r: Recipe): Record<LayerName, Part[]> {
     body: [b.body],
     hoodie: [b.hoodie],
     hoodieTrim: [b.trim],
-    logoPatch: [logoPatches[r.logo]],
+    logoPatch: [(r.logoSize === 8 ? logoPatches8 : logoPatches)[r.logo]],
     head: [head],
     ears: [ears],
     eyes: [eyes[r.eyes]],
@@ -20,7 +24,8 @@ export function layerParts(r: Recipe): Record<LayerName, Part[]> {
     mouth: [mouths[r.mouth]],
     blush: r.blush === false ? [] : [blush],
     hairFront: [h.front],
-    accessories: r.accessories.map((a) => accessories[a]),
+    // the 1st worn accessory paints with accessory1, any later one with accessory2
+    accessories: r.accessories.map((a, i) => (i === 0 ? accessories[a] : recolour(accessories[a], "p", "q"))),
   };
 }
 

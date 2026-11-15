@@ -12,6 +12,11 @@ export const logoPatches = Object.fromEntries(
   (Object.keys(logoGlyphs) as Provider[]).map((p) => [p, logoPatch(p)]),
 ) as Record<Provider, Part>;
 
+/** the small 8x8 glyph in a 10x10 patch (recipe.logoSize = 8) */
+export const logoPatches8 = Object.fromEntries(
+  (Object.keys(logoGlyphs) as Provider[]).map((p) => [p, logoPatch(p, 8)]),
+) as Record<Provider, Part>;
+
 /** every part in the library, flat, for tests and catalogues */
 export function allParts(): Part[] {
   return [
@@ -19,6 +24,6 @@ export function allParts(): Part[] {
     ...Object.values(builds).flatMap((b) => [b.body, b.hoodie, b.trim]),
     blush, ...Object.values(brows), ears, ...Object.values(eyes), head, ...Object.values(mouths),
     ...Object.values(hairs).flatMap((h) => [h.back, h.front]),
-    ...Object.values(logoPatches),
+    ...Object.values(logoPatches), ...Object.values(logoPatches8),
   ];
 }

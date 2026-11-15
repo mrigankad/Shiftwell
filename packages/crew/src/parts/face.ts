@@ -31,13 +31,19 @@ export const eyes: Record<EyeStyle, Part> = Object.fromEntries(
   (Object.keys(eyeDefs) as EyeStyle[]).map((k) => [k, part(`eyes.${k}`, "eyes", 16, eyeDefs[k].y, eyePair(eyeDefs[k].rows))]),
 ) as Record<EyeStyle, Part>;
 
+// Brows: 2 to 3 pixels each, mirrored across the face. Left brow drawn on the x16..19 strip.
+const browPair = (rows: string[]): string[] => rows.map((r) => r + "........" + [...r].reverse().join(""));
 const browDefs: Record<BrowStyle, { y: number; rows: string[] }> = {
-  soft: { y: 18, rows: ["HHHH"] },
-  arched: { y: 17, rows: [".HH.", "H..H"] },
+  soft: { y: 18, rows: [".HHH"] },
+  flat: { y: 18, rows: [".HH."] },
+  arched: { y: 17, rows: [".HH.", "H..."] },
+  raised: { y: 16, rows: [".HHH"] },
+  angry: { y: 17, rows: ["H...", ".HH."] },
+  worried: { y: 17, rows: ["...H", "HH.."] },
   none: { y: 18, rows: [] },
 };
 export const brows: Record<BrowStyle, Part> = Object.fromEntries(
-  (Object.keys(browDefs) as BrowStyle[]).map((k) => [k, part(`brows.${k}`, "brows", 16, browDefs[k].y, eyePair(browDefs[k].rows))]),
+  (Object.keys(browDefs) as BrowStyle[]).map((k) => [k, part(`brows.${k}`, "brows", 16, browDefs[k].y, browPair(browDefs[k].rows))]),
 ) as Record<BrowStyle, Part>;
 
 // Mouths centred on x=24
