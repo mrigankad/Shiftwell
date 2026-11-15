@@ -1,13 +1,47 @@
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
-use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::image::Image;
+use tauri::menu::{CheckMenuItem, Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, RunEvent, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri_plugin_autostart::{MacosLauncher, ManagerExt as _};
+use tauri_plugin_opener::OpenerExt as _;
 
 const TRAY_ID: &str = "main";
+
+#[cfg(target_os = "macos")]
+const AUTOSTART_LABEL: &str = "Open at login";
+#[cfg(not(target_os = "macos"))]
+const AUTOSTART_LABEL: &str = "Start with Windows";
+
+const ICON_NORMAL: &[u8] = include_bytes!("../icons/tray/normal.png");
+const ICON_ATTENTION: &[u8] = include_bytes!("../icons/tray/attention.png");
+const ICON_OUT: &[u8] = include_bytes!("../icons/tray/out.png");
+
+/// Crew state shown by the tray icon.
+#[derive(Clone, Copy, PartialEq)]
+enum Level {
+    Normal = 0,
+    Attention = 1,
+    Out = 2,
+}
+
+/// Menu items that are updated in place on every refresh (no set_menu, so no flicker).
+struct TrayItems {
+    status: MenuItem<tauri::Wry>,
+    handoff: MenuItem<tauri::Wry>,
+    level: AtomicU8,
+}
+
+struct Status {
+    line: String,
+    hand: Option<(String, String)>,
+    level: Level,
+}
 
 /// The daemon child, only set when this app started it.
 struct Daemon(Mutex<Option<Child>>);
@@ -127,8 +161,7 @@ fn toggle_window(app: &AppHandle) {
     }
 }
 
-/// (status line, optional handoff "from", "to")
-fn fetch_status() -> (String, Option<(String, String)>) {
+fn fetch_status() -> Status {
     let v: serde_json::Value = match agent()
         .get(&format!("{}/api/board", base()))
         .call()
@@ -136,52 +169,91 @@ fn fetch_status() -> (String, Option<(String, String)>) {
         .and_then(|r| r.into_json().map_err(|e| e.to_string()))
     {
         Ok(v) => v,
-        Err(_) => return ("Daemon not reachable".into(), None),
+        Err(_) => return Status { line: "Daemon not reachable".into(), hand: None, level: Level::Attention },
     };
     let accounts = v["accounts"].as_array().cloned().unwrap_or_default();
-    let room = accounts.iter().filter(|a| a["usage"]["state"] == "room").count();
+    let count = |st: &str| accounts.iter().filter(|a| a["usage"]["state"] == st).count();
+    let (room, low, out) = (count("room"), count("low"), count("out"));
     let active = v["runs"].as_array().map(|r| r.iter().filter(|x| x["status"] == "active").count()).unwrap_or(0);
-    let status = format!("{} accounts, {} with room, {} active runs", accounts.len(), room, active);
+    let line = format!("{} accounts, {} with room, {} active runs", accounts.len(), room, active);
     let hand = v["suggestions"]
         .as_array()
         .and_then(|s| s.first())
         .and_then(|s| Some((s["from"].as_str()?.to_string(), s["to"].as_str()?.to_string())));
-    (status, hand)
-}
-
-fn build_menu(app: &AppHandle, status: &str, hand: &Option<(String, String)>) -> tauri::Result<Menu<tauri::Wry>> {
-    let menu = Menu::new(app)?;
-    menu.append(&MenuItem::with_id(app, "open", "Open Shiftwell", true, None::<&str>)?)?;
-    menu.append(&MenuItem::with_id(app, "status", status, false, None::<&str>)?)?;
-    if let Some((f, t)) = hand {
-        menu.append(&MenuItem::with_id(app, "handoff", format!("Handoff suggested: {f} to {t}"), true, None::<&str>)?)?;
-    }
-    menu.append(&PredefinedMenuItem::separator(app)?)?;
-    menu.append(&MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?)?;
-    Ok(menu)
+    let level = if out > 0 {
+        Level::Out
+    } else if low > 0 || hand.is_some() {
+        Level::Attention
+    } else {
+        Level::Normal
+    };
+    Status { line, hand, level }
 }
 
 fn refresh_tray(app: &AppHandle) {
-    let (status, hand) = fetch_status();
-    if let (Some(tray), Ok(menu)) = (app.tray_by_id(TRAY_ID), build_menu(app, &status, &hand)) {
-        let _ = tray.set_menu(Some(menu));
-        let _ = tray.set_tooltip(Some(format!("Shiftwell: {status}")));
+    let st = fetch_status();
+    let items = app.state::<TrayItems>();
+    let _ = items.status.set_text(&st.line);
+    match &st.hand {
+        Some((f, t)) => {
+            let _ = items.handoff.set_text(format!("Handoff suggested: {f} to {t}"));
+            let _ = items.handoff.set_enabled(true);
+        }
+        None => {
+            let _ = items.handoff.set_text("No handoff suggested");
+            let _ = items.handoff.set_enabled(false);
+        }
+    }
+    if let Some(tray) = app.tray_by_id(TRAY_ID) {
+        let _ = tray.set_tooltip(Some(format!("Shiftwell: {}", st.line)));
+        if items.level.swap(st.level as u8, Ordering::Relaxed) != st.level as u8 {
+            let bytes = match st.level {
+                Level::Normal => ICON_NORMAL,
+                Level::Attention => ICON_ATTENTION,
+                Level::Out => ICON_OUT,
+            };
+            if let Ok(img) = Image::from_bytes(bytes) {
+                let _ = tray.set_icon(Some(img));
+            }
+        }
     }
 }
 
 pub fn run() {
     let app = tauri::Builder::default()
+        // Must be registered first: a second launch focuses the existing window and exits.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_window(app, None)))
+        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
+        .plugin(tauri_plugin_opener::init())
         .manage(Daemon(Mutex::new(None)))
         .setup(|app| {
             let handle = app.handle().clone();
-            let menu = build_menu(&handle, "Starting...", &None)?;
+            let open = MenuItem::with_id(&handle, "open", "Open Shiftwell", true, None::<&str>)?;
+            let browser = MenuItem::with_id(&handle, "browser", "Open dashboard in browser", true, None::<&str>)?;
+            let status = MenuItem::with_id(&handle, "status", "Starting...", false, None::<&str>)?;
+            let handoff = MenuItem::with_id(&handle, "handoff", "No handoff suggested", false, None::<&str>)?;
+            let enabled = handle.autolaunch().is_enabled().unwrap_or(false);
+            let autostart = CheckMenuItem::with_id(&handle, "autostart", AUTOSTART_LABEL, true, enabled, None::<&str>)?;
+            let quit = MenuItem::with_id(&handle, "quit", "Quit", true, None::<&str>)?;
+            let sep = PredefinedMenuItem::separator(&handle)?;
+            let sep2 = PredefinedMenuItem::separator(&handle)?;
+            let menu = Menu::with_items(&handle, &[&open, &browser, &status, &handoff, &sep, &autostart, &sep2, &quit])?;
+            app.manage(TrayItems { status, handoff, level: AtomicU8::new(Level::Normal as u8) });
             TrayIconBuilder::with_id(TRAY_ID)
-                .icon(app.default_window_icon().unwrap().clone())
+                .icon(Image::from_bytes(ICON_NORMAL)?)
                 .tooltip("Shiftwell")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
-                .on_menu_event(|app, ev| match ev.id.as_ref() {
+                .on_menu_event(move |app, ev| match ev.id.as_ref() {
                     "open" => show_window(app, None),
+                    "browser" => {
+                        let _ = app.opener().open_url(base(), None::<&str>);
+                    }
+                    "autostart" => {
+                        let al = app.autolaunch();
+                        let _ = if al.is_enabled().unwrap_or(false) { al.disable() } else { al.enable() };
+                        let _ = autostart.set_checked(al.is_enabled().unwrap_or(false));
+                    }
                     "handoff" => show_window(app, Some("/board")),
                     "quit" => app.exit(0),
                     _ => {}
