@@ -21,10 +21,22 @@ export function ShiftFloor({ accounts, runs, suggestion, canHandOff, onHandOff, 
 
   return (
     <section aria-label="Live shift floor" className="relative h-[220px] overflow-hidden rounded-2xl bg-[#1B1D24] sm:h-[300px]">
+      {/* A 288x96, 32-colour version of the scene, scaled up with hard edges so every pixel reads as a block. */}
       <picture>
-        <source srcSet="/shift-floor-still.png" media="(prefers-reduced-motion: reduce)" />
-        <img src="/shift-floor.gif" alt="" className="absolute inset-0 size-full object-cover" style={{ imageRendering: "pixelated" }} />
+        <source srcSet="/shift-floor-pixel-still.png" media="(prefers-reduced-motion: reduce)" />
+        <img src="/shift-floor-pixel.gif" alt="" className="absolute inset-0 size-full object-cover"
+          style={{ imageRendering: "pixelated", filter: "saturate(1.15) contrast(1.05)" }} />
       </picture>
+      {/* Pixel grid and soft scanlines, like an old monitor. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 opacity-50 mix-blend-multiply"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(0,0,0,0.22) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.22) 1px, transparent 1px)",
+          backgroundSize: "4.5px 4.5px",
+        }} />
+      <div aria-hidden className="pointer-events-none absolute inset-0"
+        style={{ backgroundImage: "repeating-linear-gradient(to bottom, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px, transparent 1px, transparent 3px)" }} />
+      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ boxShadow: "inset 0 0 80px rgba(0,0,0,0.55)" }} />
       <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" aria-hidden />
 
       <div className="absolute left-3 top-3 flex items-center gap-2 rounded-full bg-black/55 px-3 py-1.5 text-[12px] font-bold text-white backdrop-blur sm:left-5 sm:top-5 sm:text-[13px]">
