@@ -13,6 +13,7 @@ import {
 import { registerShim } from "./shim.js";
 import { registerRuleRoutes } from "./routes-rules.js";
 import { registerKnowledgeRoutes } from "./routes-knowledge.js";
+import { registerLiveRoutes } from "./routes-live.js";
 
 const PROVIDERS: Provider[] = ["claude", "codex", "gemini", "api"];
 
@@ -48,6 +49,7 @@ export function buildApp(opts: { openTerminal?: typeof openLoginTerminal; fetch?
   registerShim(app, doFetch);
   registerRuleRoutes(app);
   registerKnowledgeRoutes(app);
+  registerLiveRoutes(app);
 
   /** Guardrails: refuse to start work that breaks the owner's limits. */
   const guard = (ids: string[]) => {
