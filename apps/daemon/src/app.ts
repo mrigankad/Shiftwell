@@ -6,7 +6,7 @@ import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   listProfiles, createProfile, removeProfile, getProfile, envFor, loginCommand,
-  installClaudeStatusHook, usageFor, suggestHandoffs, type Provider, type Usage,
+  installClaudeStatusHook, installGeminiTelemetry, usageFor, suggestHandoffs, type Provider, type Usage,
 } from "@shiftwell/core";
 
 const PROVIDERS: Provider[] = ["claude", "codex", "gemini", "api"];
@@ -47,6 +47,7 @@ export function buildApp(opts: { openTerminal?: typeof openLoginTerminal } = {})
     try {
       const p = createProfile({ name, provider, plan });
       if (p.provider === "claude") installClaudeStatusHook(p);
+      if (p.provider === "gemini") installGeminiTelemetry(p);
       return reply.code(201).send(p);
     } catch (e) {
       return reply.code(409).send({ error: (e as Error).message });

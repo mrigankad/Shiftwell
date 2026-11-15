@@ -86,9 +86,9 @@ function AccountRow({ a, onLogin, onRemove }: { a: Account; onLogin: () => void;
           <span>API key account</span>
         )}
       </div>
-      <div className="w-[150px] shrink-0"><Bar pct={u.latest?.fiveHour?.pct} /></div>
+      <div className="w-[150px] shrink-0">{u.latest?.daily ? <div className="flex flex-col"><Bar pct={u.latest.daily.pct} /><span className="text-[11px] text-muted">daily limit</span></div> : <Bar pct={u.latest?.fiveHour?.pct} />}</div>
       <div className="w-[150px] shrink-0"><Bar pct={u.latest?.sevenDay?.pct} /></div>
-      <span className="w-[70px] shrink-0 text-sm tabular-nums text-body">{resetIn(u.latest?.fiveHour?.resetsAt)}</span>
+      <span className="w-[70px] shrink-0 text-sm tabular-nums text-body">{resetIn((u.latest?.daily ?? u.latest?.fiveHour)?.resetsAt)}</span>
       <div className="flex w-[110px] shrink-0 items-center justify-between">
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${pill.cls}`}>{pill.label}</span>
         <button onClick={onRemove} aria-label={`Remove ${a.name}`} className="cursor-pointer rounded px-1 text-muted opacity-0 hover:text-fail group-hover:opacity-100">×</button>
@@ -181,7 +181,7 @@ export function App() {
                 {accounts.map((a) => <AccountRow key={a.id} a={a} onLogin={() => login(a)} onRemove={() => remove(a)} />)}
               </div>
               <p className="text-[13px] text-muted">
-                Limits come from each Claude Code status line after its first reply. Codex limits come from its own app-server every 3 min. Gemini reader arrives next.
+                Limits come from each Claude Code status line after its first reply. Codex limits come from its own app-server every 3 min. Gemini requests are counted from its own local log against the daily limit.
               </p>
             </section>
           )}

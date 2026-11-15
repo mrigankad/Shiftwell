@@ -4,7 +4,7 @@ import { sub } from "./paths.js";
 import type { Profile } from "./profiles.js";
 
 export interface Window { pct: number; resetsAt: number | null }
-export interface Sample { at: string; fiveHour: Window | null; sevenDay: Window | null; model?: string | null }
+export interface Sample { at: string; fiveHour: Window | null; sevenDay: Window | null; daily?: Window | null; model?: string | null }
 
 export type State = "unknown" | "room" | "on" | "low" | "out";
 
@@ -43,7 +43,8 @@ export function stateFor(sample: Sample | null, now = Date.now()): State {
   if (!sample) return "unknown";
   const five = live(sample.fiveHour, now)?.pct ?? 0;
   const week = live(sample.sevenDay, now)?.pct ?? 0;
-  const worst = Math.max(five, week);
+  const day = live(sample.daily ?? null, now)?.pct ?? 0;
+  const worst = Math.max(five, week, day);
   if (worst >= 100) return "out";
   if (worst >= 85) return "low";
   return "room";

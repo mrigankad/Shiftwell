@@ -1,4 +1,4 @@
-import { listProfiles, readCodexLimits, recordSample } from "@shiftwell/core";
+import { installGeminiTelemetry, listProfiles, readCodexLimits, readGeminiDaily, recordSample } from "@shiftwell/core";
 
 const lastError = new Map<string, string>();
 export const codexErrors = () => Object.fromEntries(lastError);
@@ -22,4 +22,13 @@ export function startCodexPoller(everyMs = 3 * 60_000): () => void {
   void tick();
   const t = setInterval(tick, everyMs);
   return () => clearInterval(t);
+}
+
+/** Counts Gemini requests since Pacific midnight from each profile's own telemetry log. Cheap, so it runs often. */
+export function pollGemini(): void {
+  for (const p of listProfiles().filter((x) => x.provider === "gemini")) {
+    installGeminiTelemetry(p); // also covers profiles made before the counter existed
+    const r = readGeminiDaily(p);
+    recordSample(p.id, { fiveHour: null, sevenDay: null, daily: r.daily }, `${r.requests}/${r.limit} requests today`);
+  }
 }

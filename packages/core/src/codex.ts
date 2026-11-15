@@ -71,8 +71,8 @@ export function readCodexLimits(profile: Profile, opts: { command?: string; args
 }
 
 /** Stores a reading in the same history format as the Claude hook. */
-export function recordSample(profileId: string, limits: { fiveHour: Window | null; sevenDay: Window | null }, model: string | null = null): Sample {
-  const sample: Sample = { at: new Date().toISOString(), fiveHour: limits.fiveHour, sevenDay: limits.sevenDay, model };
+export function recordSample(profileId: string, limits: { fiveHour: Window | null; sevenDay: Window | null; daily?: Window | null }, model: string | null = null): Sample {
+  const sample: Sample = { at: new Date().toISOString(), fiveHour: limits.fiveHour, sevenDay: limits.sevenDay, daily: limits.daily ?? null, model };
   const dir = sub("usage");
   writeFileSync(join(dir, `${profileId}.json`), JSON.stringify(sample));
   appendFileSync(join(dir, `${profileId}.jsonl`), JSON.stringify(sample) + "\n");

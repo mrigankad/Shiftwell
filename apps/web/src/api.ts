@@ -10,7 +10,7 @@ export interface Account {
   configDir: string;
   loginCommand: string | null;
   usage: {
-    latest: { at: string; fiveHour: Window | null; sevenDay: Window | null; model?: string | null } | null;
+    latest: { at: string; fiveHour: Window | null; sevenDay: Window | null; daily?: Window | null; model?: string | null } | null;
     ageMinutes: number | null;
     stale: boolean;
     state: State;
