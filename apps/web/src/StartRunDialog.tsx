@@ -41,7 +41,7 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-6" onMouseDown={onClose}>
       <form role="dialog" aria-modal="true" aria-labelledby="run-title" onMouseDown={(e) => e.stopPropagation()} onSubmit={submit}
-        className="flex w-full max-w-[600px] flex-col gap-5 rounded-2xl bg-white p-6 shadow-2xl">
+        className="flex w-full max-w-[600px] flex-col gap-5 rounded-2xl bg-card p-6 shadow-2xl">
         <div className="flex flex-col gap-1">
           <h2 id="run-title" className="text-[22px] font-bold tracking-[-0.02em]">Start a run</h2>
           <p className="text-sm text-body">Shiftwell makes a fresh git worktree on its own branch and opens the account's CLI there with your task.</p>
@@ -56,7 +56,7 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
               const out = a.usage.state === "out";
               return (
                 <button type="button" role="radio" aria-checked={on} key={a.id} onClick={() => setProfileId(a.id)}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left ${on ? "border-2 border-action bg-[#FFFAF6]" : "border border-line hover:bg-surface"}`}>
+                  className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left ${on ? "border-2 border-action bg-pick" : "border border-line hover:bg-surface"}`}>
                   <CrewAvatar provider={a.provider} size={32} state={a.usage.state} />
                   <span className="flex flex-1 flex-col">
                     <span className="text-[15px] font-bold">{a.name}</span>

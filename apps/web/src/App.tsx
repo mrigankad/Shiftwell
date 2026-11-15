@@ -3,6 +3,7 @@ import { api, subscribe, type Account, type Board, type Provider, type Run, type
 import { CrewAvatar, Mark } from "./crew";
 import { AddAccountDialog } from "./AddAccountDialog";
 import { StartRunDialog } from "./StartRunDialog";
+import { ThemeSwitch, useTheme } from "./theme";
 
 const STATE_PILL: Record<State, { label: string; cls: string }> = {
   unknown: { label: "No data yet", cls: "bg-surface text-muted" },
@@ -23,7 +24,7 @@ function Bar({ pct }: { pct: number | null | undefined }) {
   const color = pct >= 100 ? "bg-fail" : pct >= 85 ? "bg-warn" : "bg-ink";
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-24 rounded-full bg-[#EFEFF2]">
+      <div className="h-1.5 w-24 rounded-full bg-track">
         <div className={`h-1.5 rounded-full ${color}`} style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
       <span className="w-10 text-[13px] font-bold tabular-nums">{Math.round(pct)}%</span>
@@ -32,8 +33,9 @@ function Bar({ pct }: { pct: number | null | undefined }) {
 }
 
 function Sidebar({ count, connected }: { count: number; connected: boolean }) {
+  const [theme, setTheme] = useTheme();
   const item = (label: string, active = false, badge?: string | number) => (
-    <div className={`flex items-center justify-between rounded-lg px-2.5 py-2 text-[15px] ${active ? "border border-line bg-white font-bold" : "text-[#3B3F48]"}`}>
+    <div className={`flex items-center justify-between rounded-lg px-2.5 py-2 text-[15px] ${active ? "border border-line bg-card font-bold" : "text-nav"}`}>
       <span>{label}</span>
       {badge !== undefined && <span className="text-[13px] font-bold text-muted">{badge}</span>}
     </div>
@@ -51,7 +53,11 @@ function Sidebar({ count, connected }: { count: number; connected: boolean }) {
       <span className="px-2.5 pb-1 pt-4 text-xs font-bold tracking-[0.06em] text-muted">ACCOUNTS</span>
       {item("Accounts", false, count)}
       <div className="flex-1" />
-      <div className="flex flex-col gap-1.5 rounded-[10px] border border-line bg-white p-3">
+      <div className="flex flex-col gap-1.5 px-1 pb-3">
+        <span className="px-1.5 text-xs font-bold tracking-[0.06em] text-muted">THEME</span>
+        <ThemeSwitch value={theme} onChange={setTheme} />
+      </div>
+      <div className="flex flex-col gap-1.5 rounded-[10px] border border-line bg-card p-3">
         <div className="flex items-center gap-2">
           <span className={`size-2 rounded-full ${connected ? "bg-pass" : "bg-fail"}`} />
           <span className="text-sm font-bold">{connected ? "Safe mode on" : "Service offline"}</span>
@@ -68,7 +74,7 @@ function AccountRow({ a, onLogin, onRemove }: { a: Account; onLogin: () => void;
   const u = a.usage;
   const pill = STATE_PILL[u.state];
   return (
-    <div className="group flex items-center gap-4 border-b border-[#F0F0F3] px-4 py-3 last:border-b-0">
+    <div className="group flex items-center gap-4 border-b border-row px-4 py-3 last:border-b-0">
       <div className="flex w-[200px] shrink-0 items-center gap-2.5">
         <CrewAvatar provider={a.provider} state={u.state} />
         <div className="flex min-w-0 flex-col">
@@ -145,7 +151,7 @@ export function App() {
           <span className="text-sm text-body">Shift board</span>
           <div className="flex gap-2">
             <button onClick={() => setAdding(true)} className="cursor-pointer rounded-lg border border-line px-3.5 py-2 text-sm font-bold hover:bg-surface">Add account</button>
-            <button onClick={() => setStarting(true)} disabled={accounts.length === 0} className="cursor-pointer rounded-lg bg-ink px-3.5 py-2 text-sm font-bold text-white hover:bg-black disabled:cursor-not-allowed disabled:opacity-40">Start a run</button>
+            <button onClick={() => setStarting(true)} disabled={accounts.length === 0} className="cursor-pointer rounded-lg bg-cta px-3.5 py-2 text-sm font-bold text-on-cta hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">Start a run</button>
           </div>
         </header>
 
@@ -158,7 +164,7 @@ export function App() {
           </div>
 
           {suggestion && (
-            <div className="flex items-center gap-6 rounded-[14px] border border-[#F7D9C4] bg-action-soft px-6 py-5">
+            <div className="flex items-center gap-6 rounded-[14px] border border-action-line bg-action-soft px-6 py-5">
               <div className="flex flex-1 flex-col gap-1">
                 <span className="text-[13px] font-bold text-action">Handoff suggested</span>
                 <span className="text-[20px] font-bold tracking-[-0.02em]">Move work from {suggestion.from} to {suggestion.to}?</span>
@@ -245,7 +251,7 @@ export function App() {
       )}
 
       {toast && (
-        <div role="status" className="fixed bottom-6 right-6 rounded-xl bg-ink px-4 py-3 text-sm font-bold text-white shadow-xl">{toast}</div>
+        <div role="status" className="fixed bottom-6 right-6 rounded-xl bg-cta px-4 py-3 text-sm font-bold text-on-cta shadow-xl">{toast}</div>
       )}
     </div>
   );
@@ -276,7 +282,7 @@ function RunRow({ run, name, provider, fromName, accounts, onOpen, onFinish, onH
     return () => window.removeEventListener("keydown", close);
   }, [picking]);
   return (
-    <div className="flex items-center gap-4 border-b border-[#F0F0F3] px-4 py-3 last:border-b-0">
+    <div className="flex items-center gap-4 border-b border-row px-4 py-3 last:border-b-0">
       <CrewAvatar provider={provider} size={32} />
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-[15px] font-bold">{run.task}</span>
@@ -295,7 +301,7 @@ function RunRow({ run, name, provider, fromName, accounts, onOpen, onFinish, onH
           </>
         )}
         {picking && (
-          <div role="menu" className="absolute right-0 top-10 z-10 flex w-[240px] flex-col gap-0.5 rounded-xl border border-line bg-white p-1.5 shadow-xl">
+          <div role="menu" className="absolute right-0 top-10 z-10 flex w-[240px] flex-col gap-0.5 rounded-xl border border-line bg-card p-1.5 shadow-xl">
             <span className="px-2 py-1 text-xs font-bold text-muted">Hand off to</span>
             {targets.map((a) => (
               <button role="menuitem" key={a.id} onClick={() => { setPicking(false); onHandOff(a.id); }}

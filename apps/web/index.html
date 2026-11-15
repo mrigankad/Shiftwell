@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Shiftwell</title>
+    <script>
+      (function () {
+        var t = "system";
+        try { t = localStorage.getItem("shiftwell.theme") || "system"; } catch (e) {}
+        var night = t === "night" || (t !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.dataset.theme = night ? "night" : "light";
+      })();
+    </script>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpolygon points='14,7 46,7 40,21 8,21' fill='%2316181D'/%3E%3Cpolygon points='8,27 40,27 34,41 2,41' fill='%23FF5A1F'/%3E%3C/svg%3E" />
   </head>
   <body>

@@ -44,7 +44,7 @@ export function AddAccountDialog({ onClose, onCreate }: {
         aria-labelledby="add-title"
         onMouseDown={(e) => e.stopPropagation()}
         onSubmit={submit}
-        className="flex w-full max-w-[560px] flex-col gap-5 rounded-2xl bg-white p-6 shadow-2xl"
+        className="flex w-full max-w-[560px] flex-col gap-5 rounded-2xl bg-card p-6 shadow-2xl"
       >
         <div className="flex flex-col gap-1">
           <h2 id="add-title" className="text-[22px] font-bold tracking-[-0.02em]">Add an account</h2>
@@ -61,7 +61,7 @@ export function AddAccountDialog({ onClose, onCreate }: {
                 aria-checked={on}
                 key={o.id}
                 onClick={() => setProvider(o.id)}
-                className={`flex cursor-pointer items-center gap-3 rounded-xl p-3 text-left ${on ? "border-2 border-action bg-[#FFFAF6]" : "border border-line hover:bg-surface"}`}
+                className={`flex cursor-pointer items-center gap-3 rounded-xl p-3 text-left ${on ? "border-2 border-action bg-pick" : "border border-line hover:bg-surface"}`}
               >
                 <CrewAvatar provider={o.id} size={36} />
                 <span className="flex flex-col">

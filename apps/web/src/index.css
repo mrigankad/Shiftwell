@@ -2,13 +2,22 @@
 
 @theme {
   --font-sans: "Plus Jakarta Sans Variable", system-ui, sans-serif;
+  --color-page: #FFFFFF;
+  --color-card: #FFFFFF;
   --color-ink: #16181D;
   --color-body: #5E6370;
   --color-muted: #7A7F8C;
+  --color-nav: #3B3F48;
   --color-line: #E8E8EC;
+  --color-row: #F0F0F3;
+  --color-track: #EFEFF2;
   --color-surface: #F7F7F8;
+  --color-cta: #16181D;
+  --color-on-cta: #FFFFFF;
   --color-action: #C9480A;
   --color-action-soft: #FFF0E6;
+  --color-action-line: #F7D9C4;
+  --color-pick: #FFFAF6;
   --color-shift: #FF5A1F;
   --color-pass: #16A06A;
   --color-pass-soft: #E7F6EF;
@@ -18,4 +27,33 @@
   --color-fail-soft: #FDECEC;
 }
 
-body { @apply bg-white text-ink font-sans antialiased; }
+/* Night shift: the palette of the pixel crew art. */
+@layer base {
+  :root[data-theme="night"] {
+    --color-page: #12141B;
+    --color-card: #191C25;
+    --color-ink: #ECEEF3;
+    --color-body: #A3A8B6;
+    --color-muted: #7C8292;
+    --color-nav: #C4C8D3;
+    --color-line: #272B36;
+    --color-row: #20232D;
+    --color-track: #2A2E3A;
+    --color-surface: #0E1016;
+    --color-cta: #F2F3F6;
+    --color-on-cta: #12141B;
+    --color-action: #FF7A3D;
+    --color-action-soft: #2A1A12;
+    --color-action-line: #4A2A18;
+    --color-pick: #22170F;
+    --color-pass: #3DD68C;
+    --color-pass-soft: #10261C;
+    --color-warn: #F0B23A;
+    --color-warn-soft: #2A2110;
+    --color-fail: #FF6B70;
+    --color-fail-soft: #2C1416;
+    color-scheme: dark;
+  }
+}
+
+body { @apply bg-page text-ink font-sans antialiased; }
