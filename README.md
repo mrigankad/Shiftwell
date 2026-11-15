@@ -55,17 +55,30 @@ For Gemini profiles Shiftwell turns on the CLI's own local telemetry in that pro
 
 The Codex CLI only speaks the OpenAI Responses API, but DeepSeek, Kimi and NVIDIA NIM only offer Chat Completions. Accounts whose preset has `wire: "chat"` therefore get a `config.toml` whose `base_url` is the daemon's own translator, `http://127.0.0.1:<port>/shim/<profileId>/v1`, and an `env_key` of a dummy variable (`SHIFTWELL_SHIM_KEY`) that Shiftwell sets in the terminal it opens. The translator turns each Responses request (instructions, messages, function calls and their outputs, function tools) into a `/chat/completions` call to the real provider, adds the bearer key from the environment variable named in the account (read in the daemon process; whatever Codex sends is ignored), and turns the reply, streamed or not, back into Responses events. It answers loopback callers only and never echoes the key or the provider's error text. Grok and Ollama Cloud (`wire: "responses"`) are called directly. It has not yet been tested against a live provider.
 
-## Status (v0.1)
+## Live view
+
+Shiftwell does not capture the terminals it opens. It reads the transcripts the official CLIs already write: Claude Code's `projects/<cwd-slug>/*.jsonl` under the profile's `CLAUDE_CONFIG_DIR`, Codex's `sessions/**/rollout-*.jsonl` (and the zstd-compressed `.jsonl.zst` ones, decoded in pure JS) under `CODEX_HOME`, and Gemini's chats under the profile's `.gemini/tmp`. It matches the file whose working directory is the run's worktree, skips thinking and reasoning, and never opens auth files. `GET /api/runs/:id/live` and the SSE stream at `/live/stream` serve it.
+
+## Workspace
+
+- **Routing rules** (`rules.json`): ordered keyword rules that prefer certain accounts for certain tasks or repos; `POST /api/rules/pick` explains the choice.
+- **Guardrails** (`guardrails.json`): max parallel runs, a stop line (never start or keep a run on an account at or above it), blocked paths written into every `HANDOFF.md`, quiet hours for notifications, and opt-in auto-rotation.
+- **Auto-rotation** (off by default): once a minute, an active run on an account at its stop line or out is handed to the account with the most room (same provider first), at most once per 30 minutes per run. `SHIFTWELL_NO_ROTATE=1` disables it.
+- **Skill library** (`skills/*.md`): shared instructions synced into each account's own `CLAUDE.md`, `AGENTS.md` or `GEMINI.md` between `shiftwell:skills` markers, so every CLI follows the same house rules.
+- **Project memory** (`memory/<repo hash>.json`): per-repo notes, pinned first, added to `HANDOFF.md`; every handoff leaves a one-line note.
+
+## Status
 
 - [x] Profiles with isolated config folders, sign in through the vendor's own login
-- [x] Claude Code status hook, usage history, state, burn-rate forecast
-- [x] Handoff suggestions (suggest only, never automatic)
-- [x] Shift board UI, add-account dialog, empty state
-- [x] Codex usage reader (`codex app-server`)
-- [x] Gemini daily request counter (CLI local telemetry)
-- [x] Runs: each task gets its own git worktree and `shiftwell/<id>` branch, the account's CLI opens there with the task
-- [x] Handoffs: writes `HANDOFF.md` (task, commits, uncommitted files, diff size) and opens the next account's CLI in the same worktree
-- [ ] Tauri shell, menu-bar widget, notifications
+- [x] Usage: Claude status hook, Codex app-server, Gemini telemetry counter; state, burn-rate forecast, insights heatmap
+- [x] Runs in git worktrees, parallel fan-out with compare view, handoffs with `HANDOFF.md`, finish with worktree cleanup
+- [x] API-key accounts (Kimi, Grok, DeepSeek, NIM, Ollama Cloud) through Codex, with the Responses-to-Chat translator
+- [x] Routing rules, guardrails, auto-rotation, skill library, project memory
+- [x] Live view from CLI transcripts
+- [x] Web UI: board with the live pixel shift floor, accounts and worker detail, reset calendar, insights, usage and cost, weekly recap, Ctrl K palette, onboarding, day and night themes, responsive down to phones
+- [x] `shiftwell` CLI, desktop notifications, Tauri desktop app with tray status and installer
+- [ ] First end-to-end run with real signed-in accounts (needs the owner)
+- [ ] Shim and Gemini transcript parsing tested against live providers
 
 ## Desktop app
 
