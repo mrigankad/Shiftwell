@@ -51,6 +51,10 @@ For Codex profiles the daemon runs `codex app-server` with that profile's `CODEX
 
 For Gemini profiles Shiftwell turns on the CLI's own local telemetry in that profile's `.gemini/settings.json` (prompts are not logged) and counts `gemini_cli.api_request` events since midnight Pacific, against 1000 a day or the number in the plan field. Gemini does not report remaining quota, so this is a count, not a vendor figure.
 
+## Chat-only providers (the Responses shim)
+
+The Codex CLI only speaks the OpenAI Responses API, but DeepSeek, Kimi and NVIDIA NIM only offer Chat Completions. Accounts whose preset has `wire: "chat"` therefore get a `config.toml` whose `base_url` is the daemon's own translator, `http://127.0.0.1:<port>/shim/<profileId>/v1`, and an `env_key` of a dummy variable (`SHIFTWELL_SHIM_KEY`) that Shiftwell sets in the terminal it opens. The translator turns each Responses request (instructions, messages, function calls and their outputs, function tools) into a `/chat/completions` call to the real provider, adds the bearer key from the environment variable named in the account (read in the daemon process; whatever Codex sends is ignored), and turns the reply, streamed or not, back into Responses events. It answers loopback callers only and never echoes the key or the provider's error text. Grok and Ollama Cloud (`wire: "responses"`) are called directly. It has not yet been tested against a live provider.
+
 ## Status (v0.1)
 
 - [x] Profiles with isolated config folders, sign in through the vendor's own login

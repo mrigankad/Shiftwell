@@ -106,7 +106,7 @@ describe("api profiles", () => {
   });
   it("writes config.toml without a key, keeping other settings", () => {
     const p = createProfile({ name: "Deep", provider: "api", api });
-    expect(envFor(p)).toEqual({ CODEX_HOME: p.configDir });
+    expect(envFor(p)).toEqual({ CODEX_HOME: p.configDir, SHIFTWELL_SHIM_KEY: "shiftwell-local-shim" });
     expect(loginCommand(p)).toBeNull();
     writeFileSync(join(p.configDir, "config.toml"), 'model = "old"\nmodel_provider = "old"\napproval_policy = "never"\n\n[model_providers.shiftwell]\nname = "stale"\n\n[projects."x"]\ntrust = true\n');
     installApiProvider(p);
@@ -117,10 +117,24 @@ describe("api profiles", () => {
     expect(t).toContain('[projects."x"]');
     expect(t).not.toContain("stale");
     expect(t).not.toContain('"old"');
-    expect(t).toContain('[model_providers.shiftwell]\nname = "Deep"\nbase_url = "https://api.deepseek.com/v1"\nenv_key = "DEEPSEEK_API_KEY"\nwire_api = "responses"');
+    expect(t).toContain(`[model_providers.shiftwell]
+name = "Deep"
+base_url = "http://127.0.0.1:4520/shim/${p.id}/v1"
+env_key = "SHIFTWELL_SHIM_KEY"
+wire_api = "responses"`);
     expect(t.match(/\[model_providers\.shiftwell\]/g)).toHaveLength(1);
   });
+  it("keeps responses-wire providers direct with their own key variable", () => {
+    const p = createProfile({ name: "Grok", provider: "api", api: { preset: "grok", baseUrl: "https://api.x.ai/v1", model: "grok-code-fast-1", keyEnv: "XAI_API_KEY" } });
+    expect(p.api?.wire).toBe("responses");
+    expect(envFor(p)).toEqual({ CODEX_HOME: p.configDir });
+    installApiProvider(p);
+    const t = readFileSync(join(p.configDir, "config.toml"), "utf8");
+    expect(t).toContain('base_url = "https://api.x.ai/v1"');
+    expect(t).toContain('env_key = "XAI_API_KEY"');
+  });
   it("has presets", () => {
+    expect(Object.fromEntries(apiPresets.map((x) => [x.id, x.wire]))).toEqual({ deepseek: "chat", kimi: "chat", grok: "responses", nim: "chat", "ollama-cloud": "responses", custom: "responses" });
     expect(apiPresets.map((x) => x.id)).toEqual(["deepseek", "kimi", "grok", "nim", "ollama-cloud", "custom"]);
   });
 });

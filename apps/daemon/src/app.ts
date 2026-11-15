@@ -10,6 +10,7 @@ import {
   listRuns, startRun, startRuns, runDiffStat, handOff, finishRun, agentCommand, HANDOFF_PROMPT, readHandoffNote, readSamples,
   runChanges, cachedRunChanges, pruneRuns, apiPresets, installApiProvider, type ApiConfig,
 } from "@shiftwell/core";
+import { registerShim } from "./shim.js";
 
 const PROVIDERS: Provider[] = ["claude", "codex", "gemini", "api"];
 
@@ -41,6 +42,8 @@ export function buildApp(opts: { openTerminal?: typeof openLoginTerminal; fetch?
   const app = Fastify({ logger: false });
   const openTerminal = opts.openTerminal ?? openLoginTerminal;
   const doFetch = opts.fetch ?? fetch;
+
+  registerShim(app, doFetch);
 
   app.get("/api/health", async () => ({ ok: true }));
   app.get("/api/board", async () => board());

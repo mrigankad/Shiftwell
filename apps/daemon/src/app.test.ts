@@ -129,7 +129,7 @@ describe("daemon api", () => {
     it("lists presets", async () => {
       const r = (await buildApp().inject({ url: "/api/presets" })).json();
       expect(r.map((p: any) => p.id)).toEqual(["deepseek", "kimi", "grok", "nim", "ollama-cloud", "custom"]);
-      expect(r[0]).toEqual({ id: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", keyEnv: "DEEPSEEK_API_KEY", defaultModel: "deepseek-chat" });
+      expect(r[0]).toEqual({ id: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", keyEnv: "DEEPSEEK_API_KEY", defaultModel: "deepseek-chat", wire: "chat" });
     });
     it("creates an api profile, writes config.toml, and rejects bad input", async () => {
       const app = buildApp();
@@ -141,7 +141,8 @@ describe("daemon api", () => {
       expect(ok.statusCode).toBe(201);
       const { readFileSync } = await import("node:fs");
       const toml = readFileSync(join(ok.json().configDir, "config.toml"), "utf8");
-      expect(toml).toContain('env_key = "SW_TEST_KEY"');
+      expect(toml).toContain('env_key = "SHIFTWELL_SHIM_KEY"');
+      expect(toml).toContain('/shim/' + ok.json().id + '/v1');
       expect(toml).toContain('model_provider = "shiftwell"');
     });
     it("reports keyPresent from the environment, never the key", async () => {
@@ -197,7 +198,7 @@ describe("daemon api", () => {
       const p = (await make(app)).json();
       const run = await app.inject({ method: "POST", url: "/api/runs", payload: { profileId: p.id, repo, task: "Do it" } });
       expect(run.statusCode).toBe(201);
-      expect(calls[0]).toEqual({ cmd: 'codex "Do it"', env: { CODEX_HOME: p.configDir } });
+      expect(calls[0]).toEqual({ cmd: 'codex "Do it"', env: { CODEX_HOME: p.configDir, SHIFTWELL_SHIM_KEY: "shiftwell-local-shim" } });
     });
   });
 });
