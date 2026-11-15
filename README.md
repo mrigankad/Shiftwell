@@ -30,7 +30,9 @@ Set `SHIFTWELL_HOME` to keep test data out of `~/.shiftwell`.
 Creating a Claude Code profile writes a `statusLine` command into that profile's own
 `settings.json`. Claude Code pipes JSON to it, including `rate_limits.five_hour` and
 `seven_day`; the hook appends those numbers to `~/.shiftwell/usage/<id>.jsonl`.
-Numbers appear after the profile's first reply. Codex and Gemini readers are not built yet.
+Numbers appear after the profile's first reply.
+
+For Codex profiles the daemon runs `codex app-server` with that profile's `CODEX_HOME` every 3 minutes and asks `account/rateLimits/read` over JSON-RPC. Codex reads its own login; Shiftwell never opens auth.json. Set `SHIFTWELL_NO_POLL=1` to turn this off.
 
 ## Status (v0.1)
 
@@ -38,6 +40,7 @@ Numbers appear after the profile's first reply. Codex and Gemini readers are not
 - [x] Claude Code status hook, usage history, state, burn-rate forecast
 - [x] Handoff suggestions (suggest only, never automatic)
 - [x] Shift board UI, add-account dialog, empty state
-- [ ] Codex usage reader (`codex app-server`), Gemini request counter
+- [x] Codex usage reader (`codex app-server`)
+- [ ] Gemini request counter
 - [ ] Launching agents in git worktrees and handoff notes
 - [ ] Tauri shell, menu-bar widget, notifications

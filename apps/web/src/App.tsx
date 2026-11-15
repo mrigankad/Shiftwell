@@ -181,7 +181,7 @@ export function App() {
                 {accounts.map((a) => <AccountRow key={a.id} a={a} onLogin={() => login(a)} onRemove={() => remove(a)} />)}
               </div>
               <p className="text-[13px] text-muted">
-                Limits come from each Claude Code status line after its first reply. Codex and Gemini readers arrive next.
+                Limits come from each Claude Code status line after its first reply. Codex limits come from its own app-server every 3 min. Gemini reader arrives next.
               </p>
             </section>
           )}
