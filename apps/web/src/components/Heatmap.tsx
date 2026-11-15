@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const hh = (h: number) => `${String(h).padStart(2, "0")}:00`;
@@ -30,7 +30,14 @@ export function Heatmap({ heat, label }: { heat: (number | null)[][]; label: str
   const [focus, setFocus] = useState({ d: 0, h: 0 });
   const at = (d: number, h: number) => heat[d]?.[h] ?? null;
 
-  const show = (d: number, h: number, el: HTMLElement) => setTip({ d, h, left: el.offsetLeft + el.offsetWidth / 2, top: el.offsetTop });
+  const outer = useRef<HTMLDivElement>(null);
+  const show = (d: number, h: number, el: HTMLElement) => {
+    const o = outer.current?.getBoundingClientRect(), c = el.getBoundingClientRect();
+    if (!o) return;
+    // Clamp so the tooltip never leaves the container, even when the grid is scrolled.
+    const left = Math.min(o.width - 70, Math.max(70, c.left - o.left + c.width / 2));
+    setTip({ d, h, left, top: c.top - o.top });
+  };
   const onKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const dd = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
     const dh = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
@@ -46,11 +53,13 @@ export function Heatmap({ heat, label }: { heat: (number | null)[][]; label: str
   };
 
   return (
+    <div ref={outer} className="relative min-w-0">
+    <div className="overflow-x-auto pb-1">
     <div role="grid" aria-label={label} onKeyDown={onKey} onMouseLeave={() => setTip(null)}
-      className="relative grid gap-[3px]" style={{ gridTemplateColumns: "34px repeat(24, minmax(0, 1fr))" }}>
+      className="grid min-w-[620px] gap-[3px]" style={{ gridTemplateColumns: "34px repeat(24, minmax(0, 1fr))" }}>
       {DAYS.map((day, d) => (
         <div key={day} role="row" className="contents">
-          <span role="rowheader" className="flex items-center text-xs font-bold text-muted">{day}</span>
+          <span role="rowheader" className="sticky left-0 z-[1] flex items-center bg-card text-xs font-bold text-muted">{day}</span>
           {Array.from({ length: 24 }, (_, h) => (
             <div key={h} role="gridcell" data-cell={`${d}-${h}`} aria-label={text(d, h)} tabIndex={focus.d === d && focus.h === h ? 0 : -1}
               onMouseEnter={(e) => show(d, h, e.currentTarget)}
@@ -61,12 +70,14 @@ export function Heatmap({ heat, label }: { heat: (number | null)[][]; label: str
           ))}
         </div>
       ))}
-      <span aria-hidden />
+      <span aria-hidden className="sticky left-0 bg-card" />
       {Array.from({ length: 24 }, (_, h) => (
         <span key={h} aria-hidden className="relative h-4 text-[11px] text-muted">
           {h % 3 === 0 && <span className="absolute left-0 whitespace-nowrap">{String(h).padStart(2, "0")}</span>}
         </span>
       ))}
+    </div>
+    </div>
       {tip && (
         <div role="tooltip" className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-lg bg-cta px-2.5 py-1.5 text-xs font-bold text-on-cta shadow-xl"
           style={{ left: tip.left, top: tip.top - 6 }}>

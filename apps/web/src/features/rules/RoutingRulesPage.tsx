@@ -6,8 +6,8 @@ import { Switch } from "../guardrails/controls";
 import { rulesApi, type PickResult, type Rule } from "./api";
 import { RuleDialog } from "./RuleDialog";
 
-const chip = "rounded-lg bg-surface px-2.5 py-1 text-sm font-bold";
-const arrow = "flex size-8 cursor-pointer items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-action";
+const chip = "max-w-full rounded-lg [overflow-wrap:anywhere] bg-surface px-2.5 py-1 text-sm font-bold";
+const arrow = "flex size-9 cursor-pointer items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-action";
 
 function Sentence({ rule, accounts }: { rule: Rule; accounts: Account[] }) {
   const who = rule.prefer.map((id) => accounts.find((a) => a.id === id)).filter((a): a is Account => !!a);
@@ -22,9 +22,9 @@ function Sentence({ rule, accounts }: { rule: Rule; accounts: Account[] }) {
       ) : <span className="font-bold">Any task</span>}
       <span className="text-body">send to</span>
       {who.length === 0 ? <span className={chip}>the account with most room</span> : who.map((a, i) => (
-        <span key={a.id} className="flex items-center gap-2">
+        <span key={a.id} className="flex min-w-0 items-center gap-2">
           {i > 0 && <span className="text-body">then</span>}
-          <span className={`${chip} flex items-center gap-1.5 !pl-1.5`}><CrewAvatar provider={a.provider} preset={a.api?.preset} size={20} />{a.name}</span>
+          <span className={`${chip} flex min-w-0 items-center gap-1.5 !pl-1.5 [overflow-wrap:anywhere]`}><CrewAvatar provider={a.provider} preset={a.api?.preset} size={20} />{a.name}</span>
         </span>
       ))}
       {who.length > 0 && rule.fallback === "most-headroom" && <span className="text-body">else most room</span>}
@@ -57,7 +57,7 @@ function TryIt({ accounts }: { accounts: Account[] }) {
         Repository path (optional)
         <input value={repo} onChange={(e) => setRepo(e.target.value)} placeholder="C:\code\web" className={`${field} font-normal`} />
       </label>
-      <button type="submit" disabled={busy || !task.trim()} className="cursor-pointer self-start rounded-lg bg-cta px-4 py-2 text-sm font-bold text-on-cta disabled:cursor-not-allowed disabled:opacity-40">
+      <button type="submit" disabled={busy || !task.trim()} className="min-h-9 cursor-pointer self-start rounded-lg bg-cta px-4 py-2 text-sm font-bold text-on-cta disabled:cursor-not-allowed disabled:opacity-40">
         {busy ? "Picking" : "Pick an account"}
       </button>
       <div aria-live="polite">
@@ -128,7 +128,7 @@ export function RoutingRulesPage({ accounts }: { accounts: Account[] }) {
   return (
     <div className="flex flex-col gap-6">
       <PageTitle eyebrow={`Routing rules · ${active} on · applied in order`} title="Tell the crew who takes what">
-        <button type="button" onClick={() => setEditing("new")} className="cursor-pointer rounded-lg bg-cta px-4 py-2 text-sm font-bold text-on-cta">New rule</button>
+        <button type="button" onClick={() => setEditing("new")} className="cursor-pointer min-h-9 shrink-0 rounded-lg bg-cta px-4 py-2 text-sm font-bold text-on-cta">New rule</button>
       </PageTitle>
       <div aria-live="polite">{error && <p role="alert" className="rounded-lg bg-fail-soft px-3 py-2 text-sm font-bold text-fail">{error}</p>}</div>
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
@@ -139,7 +139,7 @@ export function RoutingRulesPage({ accounts }: { accounts: Account[] }) {
               <li key={r.id} draggable onDragStart={(e) => { setDragId(r.id); e.dataTransfer.effectAllowed = "move"; }}
                 onDragOver={(e) => { e.preventDefault(); setOverId(r.id); }} onDragLeave={() => setOverId((o) => (o === r.id ? null : o))}
                 onDrop={(e) => { e.preventDefault(); drop(r.id); setDragId(null); setOverId(null); }} onDragEnd={() => { setDragId(null); setOverId(null); }}
-                className={`flex items-center gap-3 rounded-xl border bg-card px-3 py-3 ${overId === r.id && dragId !== r.id ? "border-action" : "border-line"} ${dragId === r.id ? "opacity-50" : ""} ${r.enabled ? "" : "opacity-70"}`}>
+                className={`flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border bg-card px-3 py-3 sm:flex-nowrap ${overId === r.id && dragId !== r.id ? "border-action" : "border-line"} ${dragId === r.id ? "opacity-50" : ""} ${r.enabled ? "" : "opacity-70"}`}>
                 <div className="flex shrink-0 flex-col items-center">
                   <button type="button" aria-label={`Move ${r.name} up`} disabled={i === 0} onClick={() => move(i, -1)} className={arrow}>
                     <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 7.5L6 4l3.5 3.5" /></svg>
@@ -149,18 +149,18 @@ export function RoutingRulesPage({ accounts }: { accounts: Account[] }) {
                     <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg>
                   </button>
                 </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <div className="flex min-w-0 basis-[calc(100%-3rem)] flex-col gap-1.5 sm:flex-1 sm:basis-0">
                   <span className="text-[13px] font-bold text-muted">{r.name}</span>
                   <Sentence rule={r} accounts={accounts} />
                 </div>
                 <button type="button" onClick={() => setEditing(r)} aria-label={`Edit ${r.name}`}
-                  className="shrink-0 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Edit</button>
+                  className="ml-auto min-h-9 shrink-0 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface sm:ml-0">Edit</button>
                 <Switch label={`${r.name} is on`} checked={r.enabled} onChange={(v) => void toggle(r, v)} />
               </li>
             ))}
           </ol>
           <button type="button" onClick={() => setEditing("new")}
-            className="cursor-pointer rounded-xl border border-dashed border-line py-3.5 text-sm font-bold text-body hover:bg-surface hover:text-ink">+ Add a rule</button>
+            className="cursor-pointer rounded-xl border border-dashed border-line min-h-11 py-3.5 text-sm font-bold text-body hover:bg-surface hover:text-ink">+ Add a rule</button>
         </div>
         <TryIt accounts={accounts} />
       </div>

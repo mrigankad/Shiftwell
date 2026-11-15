@@ -50,9 +50,9 @@ function RepoPicker({ value, repos, onPick }: { value: string; repos: RepoEntry[
           onFocus={() => { setOpen(true); setQuery(""); setActive(0); }}
           onChange={(e) => { setQuery(e.target.value); setActive(0); setOpen(true); }}
           onKeyDown={onKey}
-          className="min-w-0 flex-1 bg-transparent py-2 font-sans text-sm text-ink placeholder:text-muted focus:outline-none" />
+          className="min-w-0 flex-1 bg-transparent py-2.5 font-sans text-sm text-ink placeholder:text-muted focus:outline-none" />
         <button type="button" tabIndex={-1} aria-label={open ? "Close repository list" : "Open repository list"} onClick={() => setOpen((o) => !o)}
-          className="cursor-pointer p-1 text-muted hover:text-ink">
+          className="flex size-9 cursor-pointer items-center justify-center text-muted hover:text-ink">
           <svg aria-hidden width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
         </button>
       </div>
@@ -84,7 +84,7 @@ function PinIcon({ filled }: { filled: boolean }) {
   );
 }
 
-const iconBtn = "flex size-8 cursor-pointer items-center justify-center rounded-lg border border-transparent text-body hover:border-line hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-action";
+const iconBtn = "flex size-9 cursor-pointer items-center justify-center rounded-lg border border-transparent text-body hover:border-line hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-action";
 const fieldCls = "w-full resize-y rounded-lg border border-line bg-card px-3 py-2 font-sans text-sm leading-5 text-ink placeholder:text-muted focus:border-action focus:outline-none focus-visible:ring-2 focus-visible:ring-action/30";
 
 function NoteCard({ note, busy, onPin, onSave, onDelete }: {
@@ -95,25 +95,25 @@ function NoteCard({ note, busy, onPin, onSave, onDelete }: {
   const [confirm, setConfirm] = useState(false);
   const fieldId = useId();
   return (
-    <li className={`flex gap-3.5 rounded-xl border px-[18px] py-4 ${note.pinned ? "border-action-line bg-pick" : "border-line"}`}>
+    <li className={`flex flex-wrap gap-x-3.5 gap-y-2 rounded-xl border px-3.5 py-4 sm:flex-nowrap sm:px-[18px] ${note.pinned ? "border-action-line bg-pick" : "border-line"}`}>
       <div className={`flex size-[34px] shrink-0 items-center justify-center rounded-lg ${note.source === "handoff" ? "bg-surface text-body" : "bg-cta text-on-cta"}`}>
         {note.source === "handoff"
           ? <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M4 7h14l-3-3 M20 17H6l3 3" /></svg>
           : <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9 M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg>}
       </div>
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <div className="flex min-w-0 basis-[calc(100%-3rem)] flex-1 flex-col gap-1.5 sm:basis-0">
         {editing ? (
           <>
             <label htmlFor={fieldId} className="sr-only">Edit note</label>
             <textarea id={fieldId} value={text} rows={3} maxLength={1000} onChange={(e) => setText(e.target.value)} className={fieldCls} />
             <div className="flex gap-2">
               <button type="button" disabled={busy || !text.trim()} onClick={async () => { if (await onSave(text)) setEditing(false); }}
-                className="cursor-pointer rounded-lg bg-cta px-3 py-1.5 text-[13px] font-bold text-on-cta hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">Save</button>
-              <button type="button" onClick={() => { setText(note.text); setEditing(false); }} className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Cancel</button>
+                className="min-h-9 cursor-pointer rounded-lg bg-cta px-3 py-1.5 text-[13px] font-bold text-on-cta hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">Save</button>
+              <button type="button" onClick={() => { setText(note.text); setEditing(false); }} className="min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Cancel</button>
             </div>
           </>
         ) : (
-          <p className="text-[15px] font-bold leading-[22px]">{note.text}</p>
+          <p className="text-[15px] font-bold leading-[22px] [overflow-wrap:anywhere]">{note.text}</p>
         )}
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           {note.pinned && <span className="rounded-md bg-action-soft px-2 py-0.5 text-xs font-bold text-action">pinned</span>}
@@ -121,11 +121,11 @@ function NoteCard({ note, busy, onPin, onSave, onDelete }: {
           <span className="text-xs text-body">{note.source === "handoff" ? "Saved" : "Written by you"}, {ago(note.createdAt)}</span>
         </div>
       </div>
-      <div className="flex shrink-0 items-start gap-0.5">
+      <div className="ml-[48px] flex shrink-0 items-start gap-0.5 sm:ml-0">
         {confirm ? (
           <div className="flex items-center gap-1.5">
-            <button type="button" onClick={onDelete} disabled={busy} className="cursor-pointer rounded-lg bg-fail px-2.5 py-1.5 text-[13px] font-bold text-on-action disabled:opacity-50">Delete</button>
-            <button type="button" onClick={() => setConfirm(false)} className="cursor-pointer rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold hover:bg-surface">Keep</button>
+            <button type="button" onClick={onDelete} disabled={busy} className="cursor-pointer min-h-9 rounded-lg bg-fail px-2.5 py-1.5 text-[13px] font-bold text-on-action disabled:opacity-50">Delete</button>
+            <button type="button" onClick={() => setConfirm(false)} className="cursor-pointer min-h-9 rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold hover:bg-surface">Keep</button>
           </div>
         ) : (
           <>
@@ -189,15 +189,15 @@ export function ProjectMemoryPage({ onToast, initialRepo }: { onToast?: (message
   };
 
   return (
-    <div className="flex flex-col gap-5 px-7 py-[26px]">
+    <div className="flex flex-col gap-5 px-4 py-5 sm:px-7 sm:py-[26px]">
       <div className="flex flex-col gap-1">
         <p className="text-sm text-body">Project memory{repo ? ` · ${baseName(repo)} · ${notes?.length ?? 0} ${notes?.length === 1 ? "note" : "notes"}` : ""} · read by every account before it starts</p>
-        <h1 className="text-[30px] font-bold leading-9 tracking-[-0.03em]">What the crew has learned about this repo</h1>
+        <h1 className="text-[24px] font-bold leading-8 sm:text-[30px] sm:leading-9 tracking-[-0.03em]">What the crew has learned about this repo</h1>
       </div>
 
       <RepoPicker value={repo} repos={repoList} onPick={setRepo} />
 
-      <div className="flex items-start gap-5">
+      <div className="flex flex-col items-stretch gap-5 lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-2.5">
           {repo && (
             <form onSubmit={add} className="flex flex-col gap-2.5 rounded-xl border border-line p-[18px]">
@@ -206,10 +206,10 @@ export function ProjectMemoryPage({ onToast, initialRepo }: { onToast?: (message
                 placeholder="Something a worker would otherwise learn the hard way" />
               <div className="flex items-center justify-between gap-3">
                 <button type="button" aria-pressed={draftPinned} onClick={() => setDraftPinned((p) => !p)}
-                  className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-bold ${draftPinned ? "border-action bg-action-soft text-action" : "border-line text-body hover:text-ink"}`}>
+                  className={`flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-bold ${draftPinned ? "border-action bg-action-soft text-action" : "border-line text-body hover:text-ink"}`}>
                   <PinIcon filled={draftPinned} /> Pin it
                 </button>
-                <button type="submit" disabled={busy || !draft.trim()} className="cursor-pointer rounded-lg bg-cta px-3.5 py-2 text-sm font-bold text-on-cta hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">Add note</button>
+                <button type="submit" disabled={busy || !draft.trim()} className="min-h-9 cursor-pointer rounded-lg bg-cta px-3.5 py-2 text-sm font-bold text-on-cta hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">Add note</button>
               </div>
             </form>
           )}
@@ -226,7 +226,7 @@ export function ProjectMemoryPage({ onToast, initialRepo }: { onToast?: (message
           </ul>
         </div>
 
-        <aside className="flex w-[320px] shrink-0 flex-col gap-3.5 rounded-[14px] border border-line bg-surface p-5">
+        <aside className="flex w-full shrink-0 lg:w-[320px] flex-col gap-3.5 rounded-[14px] border border-line bg-surface p-5">
           <p className="text-[13px] font-bold tracking-[0.06em] text-action">HOW IT REACHES THE WORKERS</p>
           <p className="text-sm leading-5 text-body">Pinned notes come first, then the rest. The list is added to the end of HANDOFF.md, so Claude, Codex and Gemini all read it the same way.</p>
           <ul className="flex flex-col gap-1.5 rounded-[10px] border border-line bg-card p-3 text-[13px] leading-[19px] text-nav">
@@ -237,7 +237,7 @@ export function ProjectMemoryPage({ onToast, initialRepo }: { onToast?: (message
         </aside>
       </div>
 
-      {status && <div role="status" className="fixed bottom-6 right-6 rounded-xl bg-cta px-4 py-3 text-sm font-bold text-on-cta shadow-xl">{status}</div>}
+      {status && <div role="status" className="fixed bottom-6 left-4 right-4 z-40 rounded-xl sm:left-auto sm:right-6 bg-cta px-4 py-3 text-sm font-bold text-on-cta shadow-xl">{status}</div>}
     </div>
   );
 }

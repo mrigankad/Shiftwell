@@ -5,9 +5,9 @@ import { EmptyState, RUN_PILL, STATE_PILL, ago, type PageCtx } from "../../pages
 import { UsageChart, type Reading } from "./UsageChart";
 import { countdown, useNow } from "./useNow";
 
-const card = "flex flex-col gap-3.5 rounded-2xl border border-line bg-card p-5";
+const card = "flex flex-col gap-3.5 rounded-2xl border border-line bg-card p-4 sm:p-5";
 const h2 = "text-lg font-bold";
-const btn = "cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40";
+const btn = "min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40";
 
 function WindowTile({ label, win, now }: { label: string; win: { pct: number; resetsAt: number | null } | null | undefined; now: number }) {
   const pct = win?.pct;
@@ -42,7 +42,7 @@ function ApiCard({ a }: { a: Account }) {
     <div className="flex gap-2"><dt className="w-[96px] shrink-0 text-muted">{k}</dt><dd className="min-w-0 select-text break-all text-body">{v}</dd></div>
   );
   return (
-    <section aria-labelledby="api-h" className={card}>
+    <section aria-labelledby="api-h" className={`${card} min-w-0`}>
       <h2 id="api-h" className={h2}>API account</h2>
       <dl className="flex flex-col gap-1 text-[13px]">
         {row("Preset", cfg.preset)}
@@ -116,7 +116,7 @@ export function WorkerDetailPage({ id, ctx }: { id: string; ctx: PageCtx }) {
     // No accounts at all means the board has not arrived yet; otherwise the id is stale.
     const loading = ctx.accounts.length === 0;
     return (
-      <div className="flex flex-col gap-5 px-7 py-6">
+      <div className="flex flex-col gap-5 px-4 py-6 sm:px-7">
         {back}
         {loading
           ? <p role="status" className="rounded-xl border border-line bg-surface px-6 py-12 text-center text-sm text-muted">Loading account...</p>
@@ -151,29 +151,29 @@ export function WorkerDetailPage({ id, ctx }: { id: string; ctx: PageCtx }) {
   };
 
   return (
-    <div className="flex flex-col gap-5 px-7 py-6">
+    <div className="flex flex-col gap-5 px-4 py-6 sm:px-7">
       {back}
 
-      <section aria-label="Account summary" className="flex flex-wrap items-center gap-5 rounded-2xl bg-cta p-5 text-on-cta">
+      <section aria-label="Account summary" className="flex flex-wrap items-center gap-4 rounded-2xl bg-cta p-4 sm:gap-5 sm:p-5 text-on-cta">
         <CrewAvatar provider={a.provider} preset={a.api?.preset} size={96} state={a.usage.state} />
-        <div className="flex min-w-[240px] flex-1 flex-col gap-1.5">
+        <div className="flex min-w-[min(240px,100%)] flex-1 flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-[30px] font-bold leading-9 tracking-[-0.03em]">{a.name}</h1>
+            <h1 className="text-[26px] font-bold leading-9 tracking-[-0.03em] break-words sm:text-[30px]">{a.name}</h1>
             <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${pill.cls}`}>{pill.label}</span>
           </div>
           <p className="text-sm opacity-75">{a.plan || "No plan set"} · {a.provider}{created ? ` · added ${created}` : ""}</p>
           <p className="text-sm opacity-75">Config folder <span className="select-text break-all">{a.configDir}</span></p>
         </div>
-        <div className="flex flex-wrap gap-2.5">
+        <div className="flex w-full flex-wrap gap-2.5 sm:w-auto">
           {a.loginCommand && (
-            <button type="button" onClick={() => ctx.login(a)} className="cursor-pointer rounded-[9px] border border-on-cta/40 px-3.5 py-2.5 text-sm font-bold hover:bg-on-cta/10">Sign in</button>
+            <button type="button" onClick={() => ctx.login(a)} className="cursor-pointer min-h-10 rounded-[9px] border border-on-cta/40 px-3.5 py-2.5 text-sm font-bold hover:bg-on-cta/10">Sign in</button>
           )}
-          <button type="button" onClick={() => ctx.startRun()} className="cursor-pointer rounded-[9px] bg-action px-3.5 py-2.5 text-sm font-bold text-on-action hover:opacity-90">Start a run</button>
+          <button type="button" onClick={() => ctx.startRun()} className="cursor-pointer min-h-10 rounded-[9px] bg-action px-3.5 py-2.5 text-sm font-bold text-on-action hover:opacity-90">Start a run</button>
         </div>
       </section>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <section aria-labelledby="hist-h" className={card}>
+        <section aria-labelledby="hist-h" className={`${card} min-w-0`}>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="hist-h" className={h2}>Usage history</h2>
             <span className="text-[13px] text-body">{chartLabel} over time</span>
@@ -183,7 +183,7 @@ export function WorkerDetailPage({ id, ctx }: { id: string; ctx: PageCtx }) {
             : <UsageChart readings={hist} label={chartLabel} />}
         </section>
 
-        <section aria-labelledby="win-h" className="flex flex-col rounded-2xl border border-line bg-card p-5">
+        <section aria-labelledby="win-h" className="flex min-w-0 flex-col rounded-2xl border border-line bg-card p-4 sm:p-5">
           <h2 id="win-h" className="sr-only">Live windows</h2>
           <WindowTile label="5-hour window" win={latest?.fiveHour} now={now} />
           <WindowTile label="Weekly" win={latest?.sevenDay} now={now} />
@@ -192,7 +192,7 @@ export function WorkerDetailPage({ id, ctx }: { id: string; ctx: PageCtx }) {
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <section aria-labelledby="runs-h" className={card}>
+        <section aria-labelledby="runs-h" className={`${card} min-w-0`}>
           <h2 id="runs-h" className={h2}>Runs</h2>
           {mine.length === 0 ? <p className={empty}>No runs on this account yet</p> : (
             <>
@@ -212,7 +212,7 @@ export function WorkerDetailPage({ id, ctx }: { id: string; ctx: PageCtx }) {
           )}
         </section>
 
-        <section aria-labelledby="ho-h" className={card}>
+        <section aria-labelledby="ho-h" className={`${card} min-w-0`}>
           <h2 id="ho-h" className={h2}>Handoffs</h2>
           {handedIn.length + handedOut.length === 0 ? <p className={empty}>No handoffs in or out of this account</p> : (
             <ul>

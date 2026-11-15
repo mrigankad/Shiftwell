@@ -63,13 +63,13 @@ export function HandoffsPage({ ctx }: { ctx: PageCtx }) {
   const fromRun = (r: Run) => ctx.runs.find((x) => x.id === r.fromRunId);
 
   return (
-    <div className="flex flex-col gap-5 px-7 py-6">
+    <div className="flex flex-col gap-5 px-4 py-5 sm:px-7 sm:py-6">
       <PageTitle title="Handoffs" eyebrow={`${list.length} ${list.length === 1 ? "handoff" : "handoffs"}, newest first`} />
       {list.length === 0 ? (
         <EmptyState title="No handoffs yet"
           body="A handoff moves a run from an account that is running low to another one. The next account opens in the same worktree and reads a HANDOFF.md note with the task, the changes so far and what is left. Hand off from any active run and it will appear here." />
       ) : (
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-5">
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <div role="listbox" aria-label="Handoffs" className="overflow-hidden rounded-xl border border-line">
             {list.map((r) => {
               const from = fromRun(r);
@@ -77,13 +77,13 @@ export function HandoffsPage({ ctx }: { ctx: PageCtx }) {
               return (
                 <button key={r.id} role="option" aria-selected={on} onClick={() => setSelected(r.id)}
                   className={`flex w-full cursor-pointer flex-col gap-2 border-b border-row px-4 py-3 text-left last:border-b-0 ${on ? "bg-pick" : "hover:bg-surface"}`}>
-                  <span className="flex items-center gap-2">
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <CrewAvatar provider={from ? ctx.providerOf(from.profileId) : "api"} preset={from ? ctx.presetOf(from.profileId) : undefined} size={28} />
-                    <span className="truncate text-sm font-bold">{from ? ctx.nameOf(from.profileId) : "Removed account"}</span>
+                    <span className="min-w-0 max-w-[40%] truncate text-sm font-bold">{from ? ctx.nameOf(from.profileId) : "Removed account"}</span>
                     <span className="text-sm text-muted">→</span>
                     <CrewAvatar provider={ctx.providerOf(r.profileId)} preset={ctx.presetOf(r.profileId)} size={28} />
-                    <span className="truncate text-sm font-bold">{ctx.nameOf(r.profileId)}</span>
-                    <span className="flex-1" />
+                    <span className="min-w-0 max-w-[40%] truncate text-sm font-bold">{ctx.nameOf(r.profileId)}</span>
+                    <span className="hidden flex-1 sm:block" />
                     <span className="shrink-0 text-xs text-muted">{ago(r.startedAt)}</span>
                   </span>
                   <span className="truncate text-[15px]">{r.task}</span>
@@ -92,7 +92,7 @@ export function HandoffsPage({ ctx }: { ctx: PageCtx }) {
             })}
           </div>
 
-          <div className="min-h-[240px] rounded-xl border border-line bg-card p-5" aria-live="polite">
+          <div className="min-h-[160px] min-w-0 rounded-xl border border-line bg-card p-4 sm:p-5 lg:min-h-[240px]" aria-live="polite">
             {!sel || !note ? (
               <p className="text-sm text-body">Select a handoff to read its note.</p>
             ) : note.status === "loading" ? (
@@ -100,7 +100,7 @@ export function HandoffsPage({ ctx }: { ctx: PageCtx }) {
             ) : note.status === "error" ? (
               <div className="flex flex-col items-start gap-3">
                 <p className="rounded-lg bg-fail-soft px-3 py-2 text-sm font-bold text-fail">{note.message}</p>
-                <button onClick={() => setAttempt((n) => n + 1)} className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Try again</button>
+                <button onClick={() => setAttempt((n) => n + 1)} className="min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Try again</button>
               </div>
             ) : note.note.trim() ? (
               <Note md={note.note} />

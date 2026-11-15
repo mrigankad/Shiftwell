@@ -32,7 +32,7 @@ export function Bar({ pct }: { pct: number | null | undefined }) {
   const color = pct >= 100 ? "bg-fail" : pct >= 85 ? "bg-warn" : "bg-ink";
   return (
     <div className="flex items-center gap-2">
-      <div className="h-1.5 w-24 rounded-full bg-track">
+      <div className="h-1.5 min-w-0 max-w-[180px] flex-1 rounded-full bg-track">
         <div className={`h-1.5 rounded-full ${color}`} style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
       <span className="w-10 text-[13px] font-bold tabular-nums">{Math.round(pct)}%</span>
@@ -72,10 +72,10 @@ export function runList(ctx: PageCtx, list: Run[]): ReactNode {
 
 export function PageTitle({ eyebrow, title, children }: { eyebrow?: string; title: string; children?: ReactNode }) {
   return (
-    <div className="flex items-end justify-between gap-4">
-      <div className="flex flex-col gap-1">
+    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+      <div className="flex min-w-0 flex-col gap-1">
         {eyebrow && <span className="text-sm text-body">{eyebrow}</span>}
-        <h1 className="text-[32px] font-bold tracking-[-0.03em]">{title}</h1>
+        <h1 className="text-[26px] font-bold tracking-[-0.03em] sm:text-[32px]">{title}</h1>
       </div>
       {children}
     </div>
@@ -84,7 +84,7 @@ export function PageTitle({ eyebrow, title, children }: { eyebrow?: string; titl
 
 export function EmptyState({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-xl border border-line bg-surface px-6 py-12 text-center">
+    <div className="flex flex-col items-center gap-2 rounded-xl border border-line bg-surface px-5 py-10 text-center sm:px-6 sm:py-12">
       <span className="text-[17px] font-bold">{title}</span>
       <p className="max-w-[460px] text-sm leading-6 text-body">{body}</p>
       {action && <div className="pt-2">{action}</div>}
@@ -108,30 +108,30 @@ export function RunRow({ run, name, provider, preset, fromName, accounts, onOpen
   const ch = run.changes;
   const changeText = ch ? ` · ${ch.commits} ${ch.commits === 1 ? "commit" : "commits"}, ${ch.files} ${ch.files === 1 ? "file" : "files"}` : "";
   return (
-    <div className="flex items-center gap-4 border-b border-row px-4 py-3 last:border-b-0">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 border-b border-row px-4 py-3 last:border-b-0 md:flex-nowrap">
       <CrewAvatar provider={provider} preset={preset} size={32} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-[15px] font-bold">{run.task}</span>
-        <span className="truncate text-xs text-muted">
+      <div className="flex min-w-0 flex-1 basis-[180px] flex-col">
+        <span className="line-clamp-2 text-[15px] font-bold md:truncate">{run.task}</span>
+        <span className="text-xs text-muted [overflow-wrap:anywhere] md:truncate">
           {name}{fromName ? ` · picked up from ${fromName}` : ""} · {run.branch} · {ago(run.startedAt)}{changeText}{run.worktreeRemoved ? " · folder removed" : ""}
         </span>
       </div>
       <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${pill.cls}`}>{pill.label}</span>
-      <div className="relative flex w-[230px] shrink-0 justify-end gap-1.5">
+      <div className="relative flex w-full flex-wrap gap-1.5 md:w-auto md:shrink-0 md:justify-end lg:w-[230px]">
         {run.status === "active" && (
           <>
-            <button onClick={onOpen} className="cursor-pointer rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold hover:bg-surface">Open</button>
+            <button onClick={onOpen} className="min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Open</button>
             <button onClick={() => setPicking((v) => !v)} disabled={targets.length === 0} aria-expanded={picking}
-              className="cursor-pointer rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40">Hand off</button>
-            <button onClick={onFinish} className="cursor-pointer rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold hover:bg-surface">Done</button>
+              className="min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40">Hand off</button>
+            <button onClick={onFinish} className="min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Done</button>
           </>
         )}
         {picking && (
-          <div role="menu" className="absolute right-0 top-10 z-10 flex w-[240px] flex-col gap-0.5 rounded-xl border border-line bg-card p-1.5 shadow-xl">
+          <div role="menu" className="absolute left-0 top-11 z-10 flex w-[min(240px,calc(100vw-48px))] flex-col gap-0.5 rounded-xl border border-line bg-card p-1.5 shadow-xl md:left-auto md:right-0">
             <span className="px-2 py-1 text-xs font-bold text-muted">Hand off to</span>
             {targets.map((a) => (
               <button role="menuitem" key={a.id} onClick={() => { setPicking(false); onHandOff(a.id); }}
-                className="flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface">
+                className="flex min-h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface">
                 <CrewAvatar provider={a.provider} preset={a.api?.preset} size={24} state={a.usage.state} />
                 <span className="flex-1 font-bold">{a.name}</span>
                 <span className="text-xs text-muted">{STATE_PILL[a.usage.state].label}</span>

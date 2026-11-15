@@ -29,9 +29,9 @@ export function FinishRunDialog({ run, onClose, onFinish }: {
         </span>
       </div>
       {error && <p role="alert" className="rounded-lg bg-fail-soft px-3 py-2 text-sm font-bold text-fail">{error}</p>}
-      <div className="flex justify-end gap-2.5">
-        <button type="button" onClick={onClose} className="cursor-pointer rounded-lg border border-line px-4 py-2.5 text-sm font-bold hover:bg-surface">Cancel</button>
-        <button type="submit" data-autofocus disabled={busy} className="cursor-pointer rounded-lg bg-action px-4 py-2.5 text-sm font-bold text-on-action disabled:cursor-not-allowed disabled:opacity-50">
+      <div className="flex flex-wrap justify-end gap-2.5">
+        <button type="button" onClick={onClose} className="min-h-10 cursor-pointer rounded-lg border border-line px-4 py-2.5 text-sm font-bold hover:bg-surface">Cancel</button>
+        <button type="submit" data-autofocus disabled={busy} className="min-h-10 cursor-pointer rounded-lg bg-action px-4 py-2.5 text-sm font-bold text-on-action disabled:cursor-not-allowed disabled:opacity-50">
           {busy ? "Finishing..." : "Mark done"}
         </button>
       </div>

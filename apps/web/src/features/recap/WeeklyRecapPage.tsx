@@ -7,7 +7,7 @@ import { buildRecap, plainSummary, talkingPoints, type Recap } from "./summary";
 function ActionButton({ children, onClick, primary, disabled }: { children: React.ReactNode; onClick: () => void; primary?: boolean; disabled?: boolean }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled}
-      className={`cursor-pointer rounded-[10px] px-[18px] py-3 text-[15px] font-bold disabled:cursor-not-allowed disabled:opacity-50 ${primary ? "bg-shift text-on-action hover:opacity-90" : "border border-line bg-card text-ink hover:bg-surface"}`}>
+      className={`cursor-pointer min-h-11 rounded-[10px] px-[18px] py-3 text-[15px] font-bold disabled:cursor-not-allowed disabled:opacity-50 ${primary ? "bg-shift text-on-action hover:opacity-90" : "border border-line bg-card text-ink hover:bg-surface"}`}>
       {children}
     </button>
   );
@@ -68,16 +68,16 @@ export function WeeklyRecapPage() {
       )}
 
       {recap && (
-        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[560px_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 items-center gap-6 sm:gap-10 lg:grid-cols-[560px_minmax(0,1fr)]">
           <div className="w-full max-w-[560px] overflow-hidden rounded-3xl bg-surface">
             {preview
               ? <img src={preview} width={560} height={640} className="block h-auto w-full" alt={`Weekly recap card for ${recap.weekLabel}: ${recap.runsFinished} runs finished, ${recap.handoffs} handoffs, ${recap.commits} commits across ${recap.files} files.`} />
               : <div className="aspect-[560/640] w-full" aria-hidden />}
           </div>
 
-          <div className="flex flex-col gap-7">
+          <div className="flex min-w-0 flex-col gap-5 sm:gap-7">
             <span className="text-[14px] font-bold text-action">EVERY SUNDAY NIGHT</span>
-            <h1 className="text-[44px] font-bold leading-[48px] tracking-[-0.035em]">A recap worth sharing.</h1>
+            <h1 className="text-[32px] font-bold leading-9 sm:text-[44px] sm:leading-[48px] tracking-[-0.035em]">A recap worth sharing.</h1>
             <p className="max-w-[560px] text-[17px] leading-7 text-body">
               The week in one card: agent time, finished runs, handoffs and the hardest working account. Share it, or just enjoy it.
             </p>

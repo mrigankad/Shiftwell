@@ -54,19 +54,19 @@ export function Onboarding({ accountsCount, onAddAccount, onClose }: {
   };
 
   const s = STEPS[step];
-  const primary = "cursor-pointer rounded-xl bg-cta px-5 py-3 text-[15px] font-bold text-on-cta hover:opacity-90";
-  const secondary = "cursor-pointer rounded-xl border border-line bg-card px-4 py-3 text-[15px] font-bold hover:bg-surface";
+  const primary = "cursor-pointer min-h-11 rounded-xl bg-cta px-5 py-3 text-[15px] font-bold text-on-cta hover:opacity-90";
+  const secondary = "cursor-pointer min-h-11 rounded-xl border border-line bg-card px-4 py-3 text-[15px] font-bold hover:bg-surface";
 
   return (
     <div ref={root} role="dialog" aria-modal="true" aria-labelledby="onb-title" onKeyDown={onKey}
       className="fixed inset-0 z-40 flex flex-col overflow-y-auto bg-page lg:flex-row lg:gap-4 lg:overflow-hidden lg:p-4">
-      <section className="flex flex-1 flex-col px-8 py-8 lg:px-16 lg:py-10">
+      <section className="flex flex-1 flex-col px-5 py-6 sm:px-8 sm:py-8 lg:px-16 lg:py-10">
         <div className="flex items-center gap-2.5"><Mark /><span className="text-[21px] font-bold tracking-[-0.04em]">shiftwell</span></div>
 
-        <div className="flex flex-1 flex-col justify-center gap-4 py-10 lg:max-w-[540px]">
+        <div className="flex flex-1 flex-col justify-center gap-4 py-6 sm:py-10 lg:max-w-[540px]">
           <span className="text-[13px] font-bold tracking-[0.06em] text-action">{`STEP ${step + 1} OF ${STEPS.length} · ${s.eyebrow}`}</span>
-          <h1 id="onb-title" className="text-[44px] font-bold leading-[1.05] tracking-[-0.04em]">{s.title}</h1>
-          {s.body && <p className="text-[17px] leading-7 text-body">{s.body}</p>}
+          <h1 id="onb-title" className="text-[34px] font-bold leading-[1.05] sm:text-[44px] tracking-[-0.04em]">{s.title}</h1>
+          {s.body && <p className="text-base leading-7 text-body sm:text-[17px]">{s.body}</p>}
 
           {step === 1 && (
             <ul className="flex flex-col gap-3 pt-2">
@@ -96,11 +96,11 @@ export function Onboarding({ accountsCount, onAddAccount, onClose }: {
           )}
         </div>
 
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <div className="flex gap-1.5" aria-hidden>
             {STEPS.map((_, i) => <span key={i} className={`h-1.5 rounded-full ${i === step ? "w-6 bg-action" : "w-1.5 bg-track"}`} />)}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             {step > 0 && step < last && <button type="button" onClick={() => setStep(step - 1)} className={secondary}>Back</button>}
             {step < last && <button type="button" onClick={finish} className={secondary}>Skip</button>}
             {step < 2 && <button type="button" data-autofocus onClick={() => setStep(step + 1)} className={primary}>Continue</button>}
@@ -110,9 +110,9 @@ export function Onboarding({ accountsCount, onAddAccount, onClose }: {
         </div>
       </section>
 
-      <aside className="relative min-h-[320px] flex-1 overflow-hidden lg:rounded-[28px]">
+      <aside className="relative min-h-[260px] flex-1 sm:min-h-[320px] overflow-hidden lg:rounded-[28px]">
         <img src="/welcome.png" alt="" className="absolute inset-0 size-full object-cover" style={{ imageRendering: "pixelated" }} />
-        <div className="absolute bottom-6 left-6 right-6 flex max-w-[340px] flex-col gap-1 rounded-2xl border border-line bg-card p-4 shadow-xl">
+        <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 flex max-w-[340px] flex-col gap-1 rounded-2xl border border-line bg-card p-4 shadow-xl">
           <span className="text-[13px] font-bold text-pass">{s.caption[0]}</span>
           <span className="text-sm leading-5 text-ink">{s.caption[1]}</span>
         </div>

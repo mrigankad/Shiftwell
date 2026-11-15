@@ -45,7 +45,7 @@ function AccountRow({ a, cost, onCost }: { a: AccountWeek; cost: CostMap[string]
   const perRun = amount !== null && monthlyRuns > 0 ? amount / monthlyRuns : null;
   const avg = a.avgDailyPeak;
   return (
-    <li className="grid grid-cols-1 gap-5 border-b border-row py-5 last:border-b-0 lg:grid-cols-[minmax(0,1.1fr)_auto_minmax(0,1fr)_minmax(0,1.2fr)] lg:items-center">
+    <li className="grid min-w-0 grid-cols-1 gap-4 border-b border-row py-5 last:border-b-0 md:grid-cols-2 md:items-center md:gap-x-8 2xl:grid-cols-[minmax(0,1.1fr)_auto_minmax(0,1fr)_minmax(0,1.2fr)]">
       <div className="flex min-w-0 items-center gap-3">
         <CrewAvatar provider={a.provider} preset={a.preset} size={40} />
         <div className="flex min-w-0 flex-col">
@@ -67,11 +67,11 @@ function AccountRow({ a, cost, onCost }: { a: AccountWeek; cost: CostMap[string]
         <div><dt className="text-muted">At limit</dt><dd className={`font-bold tabular-nums ${a.hoursAtLimit > 0 ? "text-warn" : ""}`}>{Math.round(a.hoursAtLimit * 10) / 10}h</dd></div>
         <div><dt className="text-muted">Agent time</dt><dd className="font-bold tabular-nums">{a.activeHours > 0 ? fmtHours(a.activeHours) : "None"}</dd></div>
       </dl>
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
-          <NumberField label={`${a.name} monthly plan cost`} value={amount} prefix={symbolOf(currency)} step={currency === "INR" ? 100 : 5} className="w-[150px]"
+      <div className="flex min-w-0 flex-col gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <NumberField label={`${a.name} monthly plan cost`} value={amount} prefix={symbolOf(currency)} step={currency === "INR" ? 100 : 5} className="min-w-0 flex-1 sm:w-[150px] sm:flex-none"
             onChange={(v) => onCost(v, currency)} />
-          <div className="w-[88px]">
+          <div className="w-[88px] shrink-0" style={{ "--lb-min": "0px" } as React.CSSProperties}>
             <Listbox label={`${a.name} currency`} value={currency} onChange={(id) => onCost(amount, id as Currency)}
               options={CURRENCIES.map((c) => ({ id: c.id, label: c.id }))} />
           </div>
@@ -155,7 +155,7 @@ export function UsageCostPage() {
 
       {week && totals && week.accounts.length > 0 && (
         <>
-          <section aria-label="Crew totals" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <section aria-label="Crew totals" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Stat label="Average daily peak" value={totals.avg === null ? "No data" : `${Math.round(totals.avg)}%`} note="mean across accounts" />
             <Stat label="Hours at limit" value={`${Math.round(totals.atLimit * 10) / 10}h`} note={totals.atLimit > 0 ? "worth routing around" : "never blocked"} tone={totals.atLimit > 0 ? "warn" : "pass"} />
             <Stat label="Agent time this week" value={totals.hours > 0 ? fmtHours(totals.hours) : "None"} note={`${totals.finished} finished runs`} />
@@ -175,7 +175,7 @@ export function UsageCostPage() {
           </section>
 
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-            <section aria-labelledby="acc-h" className="rounded-2xl border border-line bg-card px-6 py-5">
+            <section aria-labelledby="acc-h" className="rounded-2xl border border-line bg-card px-4 py-5 sm:px-6">
               <div className="flex flex-wrap items-baseline justify-between gap-3">
                 <h2 id="acc-h" className="text-[18px] font-bold tracking-[-0.02em]">Accounts this week</h2>
                 <span className="text-[13px] text-muted">Bars show the highest usage read each day</span>
@@ -188,7 +188,7 @@ export function UsageCostPage() {
             </section>
 
             <div className="flex flex-col gap-5">
-              <section aria-labelledby="day-h" className="rounded-2xl border border-line bg-card px-6 py-5">
+              <section aria-labelledby="day-h" className="rounded-2xl border border-line bg-card px-4 py-5 sm:px-6">
                 <h2 id="day-h" className="text-[18px] font-bold tracking-[-0.02em]">Crew load by day</h2>
                 <p className="text-[13px] text-body">Mean of each account's daily peak.</p>
                 <ul role="list" className="mt-4 flex h-40 items-end gap-2">
@@ -204,7 +204,7 @@ export function UsageCostPage() {
                 </ul>
               </section>
 
-              <section aria-labelledby="cost-h" className="rounded-2xl border border-line bg-card px-6 py-5">
+              <section aria-labelledby="cost-h" className="rounded-2xl border border-line bg-card px-4 py-5 sm:px-6">
                 <h2 id="cost-h" className="text-[18px] font-bold tracking-[-0.02em]">Crew cost estimate</h2>
                 {crewCost.length === 0 ? (
                   <p className="mt-2 text-[13px] leading-5 text-body">Shiftwell does not know what you pay. Enter each plan's monthly cost and the crew total appears here.</p>

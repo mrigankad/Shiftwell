@@ -59,14 +59,14 @@ export function AddAccountDialog({ onClose, onCreate }: {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6" onMouseDown={onClose}>
       <form
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-title"
         onMouseDown={(e) => e.stopPropagation()}
         onSubmit={submit}
-        className="flex max-h-[calc(100vh-48px)] w-full max-w-[560px] flex-col gap-5 overflow-y-auto rounded-2xl bg-card p-6 shadow-2xl"
+        className="flex max-h-[calc(100dvh-24px)] w-full max-w-[560px] flex-col gap-5 overflow-y-auto rounded-t-2xl bg-card p-5 shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:rounded-2xl sm:p-6"
       >
         <div className="flex flex-col gap-1">
           <h2 id="add-title" className="text-[22px] font-bold tracking-[-0.02em]">Add an account</h2>
@@ -167,9 +167,9 @@ export function AddAccountDialog({ onClose, onCreate }: {
 
         {error && <p className="rounded-lg bg-fail-soft px-3 py-2 text-sm font-bold text-fail">{error}</p>}
 
-        <div className="flex justify-end gap-2.5">
-          <button type="button" onClick={onClose} className="cursor-pointer rounded-lg border border-line px-4 py-2.5 text-sm font-bold hover:bg-surface">Cancel</button>
-          <button type="submit" disabled={busy || !name.trim() || (isApi && !apiReady)} className="cursor-pointer rounded-lg bg-action px-4 py-2.5 text-sm font-bold text-on-action disabled:cursor-not-allowed disabled:opacity-50">
+        <div className="flex flex-wrap justify-end gap-2.5">
+          <button type="button" onClick={onClose} className="min-h-10 cursor-pointer rounded-lg border border-line px-4 py-2.5 text-sm font-bold hover:bg-surface">Cancel</button>
+          <button type="submit" disabled={busy || !name.trim() || (isApi && !apiReady)} className="min-h-10 cursor-pointer rounded-lg bg-action px-4 py-2.5 text-sm font-bold text-on-action disabled:cursor-not-allowed disabled:opacity-50">
             {busy ? "Adding…" : "Add account"}
           </button>
         </div>
@@ -197,7 +197,7 @@ function Command({ label, text }: { label: string; text: string }) {
       <span className="text-xs text-muted">{label}</span>
       <div className="flex items-center gap-2 rounded-lg border border-line bg-card px-3 py-2">
         <span className="min-w-0 flex-1 select-text break-all text-[13px] text-ink">{text}</span>
-        <button type="button" onClick={copy} className="shrink-0 cursor-pointer rounded-md border border-line px-2.5 py-1 text-xs font-bold hover:bg-surface">{copied ? "Copied" : "Copy"}</button>
+        <button type="button" onClick={copy} className="min-h-9 shrink-0 cursor-pointer rounded-md border border-line px-3 py-1 text-xs font-bold hover:bg-surface">{copied ? "Copied" : "Copy"}</button>
       </div>
     </div>
   );

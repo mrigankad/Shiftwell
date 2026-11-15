@@ -33,7 +33,7 @@ export function Segmented<T extends string>({ value, onChange, options, label }:
         const on = o.id === value;
         return (
           <button key={o.id} type="button" role="radio" aria-checked={on} tabIndex={on ? 0 : -1} onClick={() => onChange(o.id)}
-            className={`cursor-pointer rounded-lg px-3 py-1.5 text-[13px] font-bold ${on ? "border border-line bg-card text-ink" : "border border-transparent text-nav hover:text-ink"}`}>
+            className={`min-h-9 cursor-pointer rounded-lg px-3 py-1.5 text-[13px] font-bold ${on ? "border border-line bg-card text-ink" : "border border-transparent text-nav hover:text-ink"}`}>
             {o.label}
           </button>
         );
@@ -54,9 +54,9 @@ export function Modal({ titleId, onClose, onSubmit, children, width = 480 }: {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6" onMouseDown={onClose}>
       <form ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={(e) => e.stopPropagation()} onSubmit={onSubmit}
-        style={{ maxWidth: width }} className="flex w-full flex-col gap-5 rounded-2xl bg-card p-6 shadow-2xl">
+        style={{ maxWidth: width }} className="flex max-h-[calc(100dvh-24px)] w-full flex-col gap-5 overflow-y-auto rounded-t-2xl bg-card p-5 shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:rounded-2xl sm:p-6">
         {children}
       </form>
     </div>

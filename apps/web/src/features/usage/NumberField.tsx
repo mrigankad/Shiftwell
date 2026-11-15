@@ -22,7 +22,7 @@ export function NumberField({ value, onChange, label, prefix, step = 10, classNa
     if (e.key === "ArrowUp") { e.preventDefault(); bump(step); }
     else if (e.key === "ArrowDown") { e.preventDefault(); bump(-step); }
   };
-  const btn = "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-nav hover:bg-card hover:text-ink";
+  const btn = "flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg text-nav hover:bg-card hover:text-ink";
   return (
     <div className={`flex items-center gap-1 rounded-xl border border-line bg-surface px-1.5 focus-within:border-action ${className}`}>
       <button type="button" aria-label={`Decrease ${label}`} onClick={() => bump(-step)} className={btn}>

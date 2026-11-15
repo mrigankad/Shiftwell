@@ -17,23 +17,23 @@ export function ComparePage({ ctx, groupId }: { ctx: PageCtx; groupId: string })
   }, [groupId, sig, tick]);
 
   return (
-    <div className="flex flex-col gap-5 px-7 py-6">
+    <div className="flex flex-col gap-5 px-4 py-5 sm:px-7 sm:py-6">
       <div className="flex flex-col gap-2">
-        <button onClick={() => { window.location.hash = "/runs"; }} className="w-fit cursor-pointer text-sm font-bold text-body hover:text-ink">Back to runs</button>
-        <h1 className="text-[32px] font-bold tracking-[-0.03em]">{group ? group.task : "Compare runs"}</h1>
+        <button onClick={() => { window.location.hash = "/runs"; }} className="min-h-9 w-fit cursor-pointer text-sm font-bold text-body hover:text-ink">Back to runs</button>
+        <h1 className="text-[26px] font-bold tracking-[-0.03em] [overflow-wrap:anywhere] sm:text-[32px]">{group ? group.task : "Compare runs"}</h1>
         {group && <span className="text-sm text-body">{group.runs.length} accounts in parallel, each in its own worktree and branch</span>}
       </div>
 
       {error && (
-        <div role="alert" className="flex items-center justify-between gap-4 rounded-xl bg-fail-soft px-4 py-3">
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-fail-soft px-4 py-3">
           <span className="text-sm font-bold text-fail">{error}</span>
-          <button onClick={() => setTick((t) => t + 1)} className="cursor-pointer rounded-lg border border-line bg-card px-3 py-1.5 text-[13px] font-bold text-ink hover:bg-surface">Try again</button>
+          <button onClick={() => setTick((t) => t + 1)} className="min-h-9 cursor-pointer rounded-lg border border-line bg-card px-3 py-1.5 text-[13px] font-bold text-ink hover:bg-surface">Try again</button>
         </div>
       )}
       {!group && !error && <p role="status" className="text-sm text-body">Loading the runs...</p>}
 
       {group && (
-        <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.min(group.runs.length, 3)}, minmax(0, 1fr))` }}>
+        <div className={`grid grid-cols-1 gap-4 ${group.runs.length >= 3 ? "lg:grid-cols-3 md:grid-cols-2" : group.runs.length === 2 ? "md:grid-cols-2" : ""}`}>
           {group.runs.map((r) => {
             const live = ctx.runs.find((x) => x.id === r.id) ?? r;
             const pill = RUN_PILL[live.status];
@@ -61,9 +61,9 @@ export function ComparePage({ ctx, groupId }: { ctx: PageCtx; groupId: string })
                 </div>
                 {live.worktreeRemoved && <span className="text-xs text-muted">folder removed</span>}
                 {live.status === "active" && (
-                  <div className="flex gap-1.5">
-                    <button onClick={() => ctx.openRun(live)} className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Open</button>
-                    <button onClick={() => ctx.finishRun(live)} className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Done</button>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button onClick={() => ctx.openRun(live)} className="min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Open</button>
+                    <button onClick={() => ctx.finishRun(live)} className="min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Done</button>
                   </div>
                 )}
               </section>

@@ -1,7 +1,7 @@
 import type { Account } from "../../api";
 import { CrewAvatar } from "../../crew";
 
-const icon = "flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-line bg-card text-body hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-action";
+const icon = "flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-line bg-card text-body hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-action";
 
 /**
  * Multi-select where order matters. The top list is the chosen accounts in order of preference
@@ -46,7 +46,7 @@ export function OrderedPicker({ accounts, value, onChange, label }: { accounts: 
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Accounts you can add">
           {rest.map((a) => (
             <button key={a.id} type="button" onClick={() => onChange([...value, a.id])}
-              className="flex cursor-pointer items-center gap-2 rounded-full border border-dashed border-line py-1 pl-1.5 pr-3 text-[13px] font-bold text-body hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-action">
+              className="flex cursor-pointer items-center gap-2 min-h-9 rounded-full border border-dashed border-line py-1 pl-1.5 pr-3 text-[13px] font-bold text-body hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-action">
               <CrewAvatar provider={a.provider} preset={a.api?.preset} size={20} state={a.usage.state} />
               Add {a.name}
             </button>

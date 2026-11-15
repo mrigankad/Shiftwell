@@ -60,10 +60,10 @@ function PaletteDialog({ commands, onClose }: { commands: Command[]; onClose: ()
   const rows = results.map((cmd, idx) => ({ cmd, idx, heading: idx === 0 || results[idx - 1].group !== cmd.group ? cmd.group : undefined }));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-6 pt-[14vh]" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-3 pt-[8vh] sm:px-6 sm:pt-[14vh]" onMouseDown={onClose}>
       <div role="dialog" aria-modal="true" aria-label="Command palette" onKeyDown={onKey} onMouseDown={(e) => e.stopPropagation()}
-        className="flex max-h-[70vh] w-full max-w-[640px] flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-2xl">
-        <div className="flex items-center gap-3 border-b border-line px-5 py-4">
+        className="flex max-h-[80dvh] sm:max-h-[70vh] w-full max-w-[640px] flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-2xl">
+        <div className="flex items-center gap-3 border-b border-line px-4 py-3.5 sm:px-5 sm:py-4">
           <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="shrink-0 text-muted">
             <circle cx="8" cy="8" r="5.5" /><path d="M12.5 12.5L16 16" />
           </svg>
@@ -81,7 +81,7 @@ function PaletteDialog({ commands, onClose }: { commands: Command[]; onClose: ()
               {heading && <div role="presentation" className="px-3 pb-1 pt-3 text-xs font-bold tracking-[0.06em] text-muted">{heading.toUpperCase()}</div>}
               <div id={`palette-opt-${idx}`} data-idx={idx} role="option" aria-selected={idx === active}
                 onMouseMove={() => setActive(idx)} onClick={() => run(cmd)}
-                className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 ${idx === active ? "bg-surface" : ""}`}>
+                className={`flex cursor-pointer items-center gap-3 min-h-11 rounded-xl px-3 py-2.5 ${idx === active ? "bg-surface" : ""}`}>
                 <span className="flex size-7 shrink-0 items-center justify-center">
                   {cmd.icon ?? <span aria-hidden className={`size-2 rounded-full ${idx === active ? "bg-shift" : "bg-track"}`} />}
                 </span>
@@ -95,9 +95,9 @@ function PaletteDialog({ commands, onClose }: { commands: Command[]; onClose: ()
           ))}
         </ul>
 
-        <div className="flex items-center justify-between border-t border-line px-5 py-2.5 text-xs text-muted">
-          <span>Search pages, actions and accounts</span>
-          <span>Up and down to move, Enter to run</span>
+        <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2.5 text-xs text-muted sm:px-5">
+          <span className="truncate">Search pages, actions and accounts</span>
+          <span className="hidden shrink-0 sm:inline">Up and down to move, Enter to run</span>
         </div>
       </div>
     </div>

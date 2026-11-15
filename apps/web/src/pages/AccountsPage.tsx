@@ -24,7 +24,7 @@ function UsageChart({ readings, label }: { readings: Reading[]; label: string })
     .sort((a, b) => a.t - b.t);
   if (pts.length === 0) return <div ref={box}><p className="rounded-lg bg-surface px-3 py-6 text-center text-sm text-muted">No readings yet</p></div>;
 
-  const H = 120, L = 30, R = 8, T = 8, B = 18;
+  const H = 120, L = 36, R = 8, T = 8, B = 18;
   const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
   const x = (t: number) => (t1 === t0 ? L + (W - L - R) / 2 : L + ((t - t0) / (t1 - t0)) * (W - L - R));
   const y = (v: number) => T + (1 - Math.min(100, Math.max(0, v)) / 100) * (H - T - B);
@@ -74,7 +74,7 @@ function ApiDetails({ a }: { a: Account }) {
   );
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1 text-[13px]">
+      <div className="flex min-w-0 flex-col gap-1 text-[13px]">
         {row("Preset", cfg.preset)}
         {row("Model", cfg.model)}
         {row("Base URL", cfg.baseUrl)}
@@ -87,7 +87,7 @@ function ApiDetails({ a }: { a: Account }) {
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={test} disabled={state === "busy"} className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface disabled:cursor-wait disabled:opacity-60">
+        <button type="button" onClick={test} disabled={state === "busy"} className="inline-flex cursor-pointer items-center gap-2 min-h-9 rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface disabled:cursor-wait disabled:opacity-60">
           {state === "busy" && <span aria-hidden className="size-3.5 animate-spin rounded-full border-2 border-line border-t-action" />}
           {state === "busy" ? "Testing..." : "Test connection"}
         </button>
@@ -115,11 +115,11 @@ function AccountCard({ a, ctx }: { a: Account; ctx: PageCtx }) {
   const empty = "rounded-lg bg-surface px-3 py-6 text-center text-sm text-muted";
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-line bg-card p-5">
-      <div className="flex items-center gap-3">
+    <div className="flex min-w-0 flex-col gap-4 rounded-xl border border-line bg-card p-4 sm:p-5">
+      <div className="flex flex-wrap items-center gap-3">
         <CrewAvatar provider={a.provider} preset={a.api?.preset} size={40} state={a.usage.state} />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <button onClick={() => ctx.go(`accounts/${a.id}`)} className="flex cursor-pointer items-center gap-1.5 truncate text-left text-[17px] font-bold hover:underline">
+        <div className="flex min-w-[140px] flex-1 flex-col">
+          <button onClick={() => ctx.go(`accounts/${a.id}`)} className="flex min-h-9 cursor-pointer items-center gap-1.5 truncate text-left text-[17px] font-bold hover:underline">
             <span className="truncate">{a.name}</span>
             <ProviderLogo provider={a.provider} preset={a.api?.preset} size={14} />
           </button>
@@ -128,7 +128,7 @@ function AccountCard({ a, ctx }: { a: Account; ctx: PageCtx }) {
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${pill.cls}`}>{pill.label}</span>
       </div>
 
-      <div className="flex flex-col gap-1 text-[13px]">
+      <div className="flex min-w-0 flex-col gap-1 text-[13px]">
         <div className="flex gap-2"><span className="w-[88px] shrink-0 text-muted">Config folder</span><span className="min-w-0 select-text break-all text-body">{a.configDir}</span></div>
         {created && !Number.isNaN(Date.parse(created)) && (
           <div className="flex gap-2"><span className="w-[88px] shrink-0 text-muted">Created</span><span className="text-body">{new Date(created).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" })}</span></div>
@@ -146,18 +146,18 @@ function AccountCard({ a, ctx }: { a: Account; ctx: PageCtx }) {
 
       <div className="flex justify-end gap-2">
         {a.loginCommand && (
-          <button onClick={() => ctx.login(a)} className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Sign in</button>
+          <button onClick={() => ctx.login(a)} className="cursor-pointer min-h-9 rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Sign in</button>
         )}
-        <button onClick={() => ctx.remove(a)} className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold text-fail hover:bg-fail-soft">Remove</button>
+        <button onClick={() => ctx.remove(a)} className="cursor-pointer min-h-9 rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold text-fail hover:bg-fail-soft">Remove</button>
       </div>
     </div>
   );
 }
 
 export function AccountsPage({ ctx }: { ctx: PageCtx }) {
-  const add = <button onClick={ctx.addAccount} className="cursor-pointer rounded-lg bg-cta px-3.5 py-2 text-sm font-bold text-on-cta hover:opacity-90">Add account</button>;
+  const add = <button onClick={ctx.addAccount} className="cursor-pointer min-h-9 rounded-lg bg-cta px-3.5 py-2 text-sm font-bold text-on-cta hover:opacity-90">Add account</button>;
   return (
-    <div className="flex flex-col gap-5 px-7 py-6">
+    <div className="flex flex-col gap-5 px-4 py-6 sm:px-7">
       <PageTitle title="Accounts" eyebrow={`${ctx.accounts.length} on the crew`}>{add}</PageTitle>
       {ctx.accounts.length === 0 ? (
         <EmptyState title="No accounts yet" body="Add a Claude Code, Codex or Gemini account. Each gets its own folder, and you sign in through the vendor's own login. Shiftwell never reads your tokens." action={add} />

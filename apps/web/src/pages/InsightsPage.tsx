@@ -27,7 +27,7 @@ function useInsights() {
 
 function Tile({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-h-[112px] flex-col gap-2 rounded-xl border border-line bg-card p-5">
+    <div className="flex min-h-[112px] flex-col gap-2 rounded-xl border border-line bg-card p-4 sm:p-5">
       <span className="text-[13px] font-bold text-muted">{label}</span>
       {children}
     </div>
@@ -65,7 +65,24 @@ function AccountTable({ accounts }: { accounts: InsightAccount[] }) {
     </th>
   );
   return (
-    <div className="overflow-x-auto rounded-xl border border-line bg-card">
+    <>
+    <ul role="list" aria-label="Per account usage" className="flex flex-col gap-3 md:hidden">
+      {rows.map((a) => (
+        <li key={a.id} className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4">
+          <div className="flex items-center gap-2.5">
+            <CrewAvatar provider={a.provider} preset={a.preset} size={28} />
+            <span className="min-w-0 truncate font-bold">{a.name}</span>
+          </div>
+          <dl className="grid grid-cols-2 gap-3 text-[13px]">
+            <div><dt className="text-muted">Readings</dt><dd className="font-bold tabular-nums">{a.readingsLast7d}</dd></div>
+            <div><dt className="text-muted">Peak</dt><dd className="font-bold tabular-nums">{fmtPct(a.peakLast7d)}</dd></div>
+            <div><dt className="text-muted">Avg daily peak</dt><dd className="font-bold tabular-nums">{fmtPct(a.avgDailyPeak)}</dd></div>
+            <div><dt className="text-muted">Hours at limit</dt><dd className={`font-bold tabular-nums ${a.hoursAtLimitLast7d > 0 ? "text-fail" : ""}`}>{fmtHours(a.hoursAtLimitLast7d)}</dd></div>
+          </dl>
+        </li>
+      ))}
+    </ul>
+    <div className="hidden overflow-x-auto rounded-xl border border-line bg-card md:block">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-row bg-surface">
@@ -90,6 +107,7 @@ function AccountTable({ accounts }: { accounts: InsightAccount[] }) {
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 
@@ -110,7 +128,7 @@ export function InsightsPage(_: { ctx: PageCtx }) {
   const title = <PageTitle title="Insights" eyebrow="The last 7 days across the crew" />;
   if (!data) {
     return (
-      <div className="flex flex-col gap-5 px-7 py-6">
+      <div className="flex flex-col gap-5 px-4 py-6 sm:px-7">
         {title}
         {error ? (
           <EmptyState title="Could not load insights" body={error}
@@ -123,7 +141,7 @@ export function InsightsPage(_: { ctx: PageCtx }) {
   }
   if (accounts.length === 0 || accounts.every((a) => a.readingsLast7d === 0)) {
     return (
-      <div className="flex flex-col gap-5 px-7 py-6">
+      <div className="flex flex-col gap-5 px-4 py-6 sm:px-7">
         {title}
         <EmptyState title="No readings yet" body="Insights appear once the crew has a few usage readings. Keep the service running and check back after some work." />
       </div>
@@ -136,11 +154,11 @@ export function InsightsPage(_: { ctx: PageCtx }) {
   const head = data.crewHeadroomNow;
 
   return (
-    <div className="flex flex-col gap-5 px-7 py-6">
+    <div className="flex flex-col gap-5 px-4 py-6 sm:px-7">
       {title}
       {error && <p role="alert" className="rounded-lg bg-fail-soft px-3 py-2 text-[13px] font-bold text-fail">Could not refresh: {error}. Showing the last data.</p>}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Tile label="Crew headroom now">
           <span className="text-[32px] font-bold leading-none tracking-[-0.03em]">{head === null ? "n/a" : `${Math.round(head)}%`}</span>
           <span className="text-[13px] text-body">{head === null ? "No live readings yet" : "of the crew's capacity is free"}</span>
@@ -162,7 +180,7 @@ export function InsightsPage(_: { ctx: PageCtx }) {
         </Tile>
       </div>
 
-      <section aria-labelledby="heat-h" className="flex flex-col gap-4 rounded-xl border border-line bg-card p-5">
+      <section aria-labelledby="heat-h" className="flex min-w-0 flex-col gap-4 rounded-xl border border-line bg-card p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-col gap-0.5">
             <h2 id="heat-h" className="text-[17px] font-bold">When you hit limits</h2>
@@ -170,7 +188,7 @@ export function InsightsPage(_: { ctx: PageCtx }) {
           </div>
           {accounts.length <= 3
             ? <Segmented label="Account" value={who} onChange={setWho} options={opts} />
-            : <Listbox label="Account" value={who} onChange={setWho} options={opts} />}
+            : <Listbox className="w-full sm:w-auto" label="Account" value={who} onChange={setWho} options={opts} />}
         </div>
         <Heatmap heat={heat} label={`Peak usage by weekday and hour, ${selected ? selected.name : "whole crew"}`} />
         <Legend />

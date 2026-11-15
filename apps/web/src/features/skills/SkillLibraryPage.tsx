@@ -14,7 +14,7 @@ const labelOf = (id: SkillProvider) => PROVIDERS.find((p) => p.id === id)?.label
 function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
     <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}
-      className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full border transition-colors ${checked ? "border-action bg-action" : "border-line bg-track"}`}>
+      className={`relative h-6 w-11 shrink-0 cursor-pointer before:absolute before:-inset-2 before:content-['']  rounded-full border transition-colors ${checked ? "border-action bg-action" : "border-line bg-track"}`}>
       <span aria-hidden className={`absolute top-0.5 size-4.5 rounded-full bg-card shadow transition-all ${checked ? "left-[22px]" : "left-0.5"}`} />
     </button>
   );
@@ -24,7 +24,7 @@ function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: 
 function ProviderChip({ label, on, onToggle }: { label: string; on: boolean; onToggle: () => void }) {
   return (
     <button type="button" aria-pressed={on} onClick={onToggle}
-      className={`flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-bold ${on ? "border-action bg-action-soft text-action" : "border-line bg-card text-body hover:text-ink"}`}>
+      className={`flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-bold ${on ? "border-action bg-action-soft text-action" : "border-line bg-card text-body hover:text-ink"}`}>
       <span aria-hidden className={`flex size-3.5 items-center justify-center rounded-full border ${on ? "border-action bg-action text-on-action" : "border-line"}`}>
         {on && <svg width="9" height="9" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 6.5l2.5 2.5 4.5-5.5" /></svg>}
       </span>
@@ -103,19 +103,19 @@ export function SkillLibraryPage({ onToast }: { onToast?: (message: string) => v
   const canSave = !!draft && draft.name.trim().length > 0 && draft.body.trim().length > 0 && draft.providers.length > 0 && !busy;
 
   return (
-    <div className="flex flex-col gap-5 px-7 py-[26px]">
-      <div className="flex items-end justify-between gap-4">
+    <div className="flex flex-col gap-5 px-4 py-5 sm:px-7 sm:py-[26px]">
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="flex flex-col gap-1">
           <p className="text-sm text-body">Skill library · {skills?.length ?? 0} {skills?.length === 1 ? "skill" : "skills"} · one source, every account</p>
-          <h1 className="text-[30px] font-bold leading-9 tracking-[-0.03em]">Every worker knows the same tricks</h1>
+          <h1 className="text-[24px] font-bold leading-8 sm:text-[30px] sm:leading-9 tracking-[-0.03em]">Every worker knows the same tricks</h1>
         </div>
         <button type="button" onClick={() => { setDraft({ ...blank, id: null, providers: [...ALL] }); setConfirmDelete(false); }}
-          className="cursor-pointer rounded-lg bg-cta px-3.5 py-2 text-sm font-bold text-on-cta hover:opacity-90">Add skill</button>
+          className="min-h-9 cursor-pointer rounded-lg bg-cta px-3.5 py-2 text-sm font-bold text-on-cta hover:opacity-90">Add skill</button>
       </div>
 
-      <div className="flex items-start gap-5">
+      <div className="flex flex-col items-stretch gap-5 lg:flex-row lg:items-start">
         <section aria-label="Skills" className="min-w-0 flex-1 overflow-hidden rounded-[14px] border border-line">
-          <div className="grid grid-cols-[1fr_190px_64px] gap-3.5 border-b border-line bg-surface px-4 py-2.5 text-[13px] font-bold text-body">
+          <div className="hidden grid-cols-[1fr_190px_64px] gap-3.5 border-b border-line bg-surface sm:grid px-4 py-2.5 text-[13px] font-bold text-body">
             <span>Skill</span><span>Works with</span><span className="text-right">On</span>
           </div>
           {skills === null && <p className="px-4 py-6 text-sm text-body">Loading skills.</p>}
@@ -124,31 +124,31 @@ export function SkillLibraryPage({ onToast }: { onToast?: (message: string) => v
             {skills?.map((s) => {
               const open = draft?.id === s.id;
               return (
-                <li key={s.id} className={`grid grid-cols-[1fr_190px_64px] items-center gap-3.5 border-b border-row px-4 py-3 last:border-b-0 ${open ? "bg-pick" : ""}`}>
+                <li key={s.id} className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3.5 gap-y-2 border-b border-row px-4 py-3 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_190px_64px] ${open ? "bg-pick" : ""}`}>
                   <button type="button" aria-current={open ? "true" : undefined} onClick={() => { setDraft(fromSkill(s)); setConfirmDelete(false); }}
-                    className="flex min-w-0 cursor-pointer flex-col gap-0.5 rounded-md text-left focus-visible:outline-2 focus-visible:outline-action">
+                    className="col-start-1 row-start-1 flex min-h-9 min-w-0 cursor-pointer flex-col justify-center gap-0.5 rounded-md text-left sm:col-auto sm:row-auto focus-visible:outline-2 focus-visible:outline-action">
                     <span className="truncate text-[15px] font-bold text-ink">{s.name}</span>
                     <span className="truncate text-[13px] text-body">{s.description || "No description"}</span>
                   </button>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="col-span-2 row-start-2 flex flex-wrap gap-1.5 sm:col-auto sm:row-auto">
                     {s.providers.length === ALL.length
                       ? <span className="rounded-md bg-surface px-2 py-0.5 text-xs font-bold text-ink">All 4</span>
                       : s.providers.map((p) => <span key={p} className="rounded-md bg-surface px-2 py-0.5 text-xs font-bold text-ink">{labelOf(p)}</span>)}
                   </div>
-                  <div className="flex justify-end"><Switch checked={s.enabled} onChange={(v) => toggleEnabled(s, v)} label={`${s.name} enabled`} /></div>
+                  <div className="col-start-2 row-start-1 flex justify-end sm:col-auto sm:row-auto"><Switch checked={s.enabled} onChange={(v) => toggleEnabled(s, v)} label={`${s.name} enabled`} /></div>
                 </li>
               );
             })}
           </ul>
         </section>
 
-        <div className="flex w-[360px] shrink-0 flex-col gap-3.5">
+        <div className="flex w-full shrink-0 flex-col gap-3.5 lg:w-[360px]">
           <section aria-label="Sync" className="flex flex-col gap-3 rounded-[14px] border border-line bg-surface p-5">
             <p className="text-[13px] font-bold tracking-[0.06em] text-action">SYNC</p>
             <p className="text-base font-bold leading-5">{enabledCount} {enabledCount === 1 ? "skill is" : "skills are"} ready to share</p>
             <p className="text-sm leading-[21px] text-body">Skills are written between two marker comments in each account's own instruction file. Everything else in those files stays as it is.</p>
             <button type="button" onClick={sync} disabled={syncing}
-              className="cursor-pointer rounded-[9px] bg-action px-3 py-2.5 text-sm font-bold text-on-action hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
+              className="min-h-10 cursor-pointer rounded-[9px] bg-action px-3 py-2.5 text-sm font-bold text-on-action hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50">
               {syncing ? "Syncing" : "Sync to all accounts"}
             </button>
             {synced && (
@@ -186,20 +186,20 @@ export function SkillLibraryPage({ onToast }: { onToast?: (message: string) => v
                 <span className="text-[13px] font-bold">Enabled</span>
                 <Switch checked={draft.enabled} onChange={(v) => setDraft({ ...draft, enabled: v })} label="Skill enabled" />
               </div>
-              <div className="flex items-center justify-between gap-2 pt-1">
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
                 {draft.id ? (
                   confirmDelete ? (
                     <div className="flex items-center gap-2">
-                      <button type="button" onClick={remove} disabled={busy} className="cursor-pointer rounded-lg bg-fail px-3 py-2 text-[13px] font-bold text-on-action disabled:opacity-50">Delete for good</button>
-                      <button type="button" onClick={() => setConfirmDelete(false)} className="cursor-pointer rounded-lg border border-line px-3 py-2 text-[13px] font-bold hover:bg-surface">Keep</button>
+                      <button type="button" onClick={remove} disabled={busy} className="cursor-pointer min-h-9 rounded-lg bg-fail px-3 py-2 text-[13px] font-bold text-on-action disabled:opacity-50">Delete for good</button>
+                      <button type="button" onClick={() => setConfirmDelete(false)} className="cursor-pointer min-h-9 rounded-lg border border-line px-3 py-2 text-[13px] font-bold hover:bg-surface">Keep</button>
                     </div>
                   ) : (
-                    <button type="button" onClick={() => setConfirmDelete(true)} className="cursor-pointer rounded-lg border border-line px-3 py-2 text-[13px] font-bold text-fail hover:bg-fail-soft">Delete</button>
+                    <button type="button" onClick={() => setConfirmDelete(true)} className="cursor-pointer min-h-9 rounded-lg border border-line px-3 py-2 text-[13px] font-bold text-fail hover:bg-fail-soft">Delete</button>
                   )
                 ) : <span />}
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => { setDraft(null); setConfirmDelete(false); }} className="cursor-pointer rounded-lg border border-line px-3.5 py-2 text-[13px] font-bold hover:bg-surface">Close</button>
-                  <button type="button" onClick={save} disabled={!canSave} className="cursor-pointer rounded-lg bg-cta px-3.5 py-2 text-[13px] font-bold text-on-cta hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">{draft.id ? "Save" : "Create"}</button>
+                  <button type="button" onClick={() => { setDraft(null); setConfirmDelete(false); }} className="cursor-pointer min-h-9 rounded-lg border border-line px-3.5 py-2 text-[13px] font-bold hover:bg-surface">Close</button>
+                  <button type="button" onClick={save} disabled={!canSave} className="cursor-pointer min-h-9 rounded-lg bg-cta px-3.5 py-2 text-[13px] font-bold text-on-cta hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">{draft.id ? "Save" : "Create"}</button>
                 </div>
               </div>
             </section>
@@ -214,7 +214,7 @@ export function SkillLibraryPage({ onToast }: { onToast?: (message: string) => v
         </div>
       </div>
 
-      {status && <div role="status" className="fixed bottom-6 right-6 rounded-xl bg-cta px-4 py-3 text-sm font-bold text-on-cta shadow-xl">{status}</div>}
+      {status && <div role="status" className="fixed bottom-6 left-4 right-4 z-40 rounded-xl sm:left-auto sm:right-6 bg-cta px-4 py-3 text-sm font-bold text-on-cta shadow-xl">{status}</div>}
     </div>
   );
 }
