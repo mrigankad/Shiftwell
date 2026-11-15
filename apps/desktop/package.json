@@ -1,0 +1,14 @@
+{
+  "name": "@shiftwell/desktop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "icons": "node scripts/make-icon.mjs && tauri icon src-tauri/icon-source.png"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

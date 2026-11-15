@@ -12,7 +12,7 @@ It never reads or stores login tokens.
 | Core logic | TypeScript library `packages/core` (profiles, status hook, usage math, handoff advisor) |
 | Background service | Node 22 + Fastify, `apps/daemon`, bound to 127.0.0.1:4520, live updates over SSE |
 | UI | React 18 + Vite 6 + Tailwind 4, `apps/web`, Plus Jakarta Sans, pixel crew art |
-| Desktop shell | Tauri 2 (next step, needs Rust installed) |
+| Desktop shell | Tauri 2, `apps/desktop` (window + tray, see below) |
 
 ## Run
 
@@ -66,3 +66,16 @@ The Codex CLI only speaks the OpenAI Responses API, but DeepSeek, Kimi and NVIDI
 - [x] Runs: each task gets its own git worktree and `shiftwell/<id>` branch, the account's CLI opens there with the task
 - [x] Handoffs: writes `HANDOFF.md` (task, commits, uncommitted files, diff size) and opens the next account's CLI in the same worktree
 - [ ] Tauri shell, menu-bar widget, notifications
+
+## Desktop app
+
+`apps/desktop` is a Tauri 2 shell with no frontend of its own: its window loads `http://127.0.0.1:<port>` (`SHIFTWELL_PORT`, default 4520) from the daemon. It needs Rust (stable, MSVC on Windows) and a built daemon (`pnpm -r build`).
+
+```bash
+pnpm desktop                                  # tauri dev
+pnpm --filter @shiftwell/desktop build        # installer in apps/desktop/src-tauri/target/release/bundle
+```
+
+On launch it checks `/api/health`; if no daemon answers it runs `node <repo>/apps/daemon/dist/server.js` (no console window), waits up to 10 s, then shows the window. It stops the daemon on quit only if it started it. The repo is taken from `SHIFTWELL_REPO`; if unset, the nearest parent folder of the executable that contains `apps/daemon/dist/server.js` is used (works for dev and release builds inside the checkout). Installed elsewhere, set `SHIFTWELL_REPO`. A missing Node or daemon shows an error page.
+
+The tray menu has Open Shiftwell, a status line refreshed every 30 s, a handoff suggestion (opens `#/board`) and Quit. Closing the window hides it to the tray; left-click on the tray icon toggles it. Regenerate icons with `pnpm --filter @shiftwell/desktop icons`.

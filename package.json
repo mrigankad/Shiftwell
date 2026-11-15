@@ -8,6 +8,7 @@
     "build": "pnpm -r build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
+    "desktop": "pnpm --filter @shiftwell/desktop dev",
     "shiftwell": "node apps/cli/dist/main.js"
   },
   "packageManager": "pnpm@11.8.0"
