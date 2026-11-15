@@ -7,7 +7,7 @@ import { buildRecap, plainSummary, talkingPoints, type Recap } from "./summary";
 function ActionButton({ children, onClick, primary, disabled }: { children: React.ReactNode; onClick: () => void; primary?: boolean; disabled?: boolean }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled}
-      className={`cursor-pointer min-h-11 rounded-[10px] px-[18px] py-3 text-[15px] font-bold disabled:cursor-not-allowed disabled:opacity-50 ${primary ? "bg-shift text-on-action hover:opacity-90" : "border border-line bg-card text-ink hover:bg-surface"}`}>
+      className={`cursor-pointer min-h-11 rounded-control px-[18px] py-3 text-ui font-bold disabled:cursor-not-allowed disabled:opacity-50 ${primary ? "bg-shift text-on-action hover:opacity-90" : "border border-line bg-card text-ink hover:bg-surface"}`}>
       {children}
     </button>
   );
@@ -76,23 +76,23 @@ export function WeeklyRecapPage() {
           </div>
 
           <div className="flex min-w-0 flex-col gap-5 sm:gap-7">
-            <span className="text-[14px] font-bold text-action">EVERY SUNDAY NIGHT</span>
-            <h1 className="text-[32px] font-bold leading-9 sm:text-[44px] sm:leading-[48px] tracking-[-0.035em]">A recap worth sharing.</h1>
-            <p className="max-w-[560px] text-[17px] leading-7 text-body">
+            <span className="text-sm font-bold text-action">EVERY SUNDAY NIGHT</span>
+            <h1 className="text-h1 font-bold leading-9 tracking-[-0.035em] sm:text-display sm:leading-[48px]">A recap worth sharing.</h1>
+            <p className="max-w-[560px] text-title leading-7 text-body">
               The week in one card: agent time, finished runs, handoffs and the hardest working account. Share it, or just enjoy it.
             </p>
             <ol role="list" className="flex max-w-[560px] flex-col">
               {points.map((p, i) => (
                 <li key={i} className="flex items-start gap-3.5 border-t border-line py-3.5">
-                  <span aria-hidden className="w-7 shrink-0 text-[15px] font-bold text-action">{String(i + 1).padStart(2, "0")}</span>
-                  <span className="text-[16px] leading-6">{p}</span>
+                  <span aria-hidden className="w-7 shrink-0 text-ui font-bold text-action">{String(i + 1).padStart(2, "0")}</span>
+                  <span className="text-base leading-6">{p}</span>
                 </li>
               ))}
             </ol>
             <div className="flex flex-wrap items-center gap-2.5">
               <ActionButton primary onClick={download} disabled={!preview}>Download as PNG</ActionButton>
               <ActionButton onClick={copy} disabled={!recap}>Copy summary</ActionButton>
-              <span role="status" aria-live="polite" className="text-[13px] text-body">{status}</span>
+              <span role="status" aria-live="polite" className="text-meta text-body">{status}</span>
             </div>
           </div>
         </div>

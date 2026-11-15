@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Run } from "../api";
+import { buttonCls } from "../components/ui/Button";
 import { EmptyState, PageTitle, runRow, type PageCtx } from "./shared";
 
 type Filter = "active" | "handed-off" | "done" | "all";
@@ -23,16 +24,16 @@ export function RunsPage({ ctx }: { ctx: PageCtx }) {
   const shown = filter === "all" ? ctx.runs : ctx.runs.filter((r) => r.status === filter);
   const e = EMPTY[filter];
   return (
-    <div className="flex flex-col gap-5 px-4 py-5 sm:px-7 sm:py-6">
+    <div className="flex flex-col gap-5">
       <PageTitle title="Runs" eyebrow={`${count("active")} active, ${ctx.runs.length} in total`}>
         <button onClick={ctx.prune} className="cursor-pointer min-h-9 rounded-lg border border-line px-3.5 py-2 text-sm font-bold hover:bg-surface">Clean up</button>
       </PageTitle>
-      <div role="radiogroup" aria-label="Filter runs" className="flex w-fit max-w-full gap-0.5 overflow-x-auto rounded-xl border border-line bg-surface p-1">
+      <div role="radiogroup" aria-label="Filter runs" className="flex w-fit max-w-full gap-0.5 overflow-x-auto rounded-card border border-line bg-surface p-1">
         {FILTERS.map((f) => {
           const on = filter === f.id;
           return (
             <button key={f.id} type="button" role="radio" aria-checked={on} onClick={() => setFilter(f.id)}
-              className={`flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-bold ${on ? "border border-line bg-card text-ink" : "border border-transparent text-nav hover:text-ink"}`}>
+              className={`flex min-h-9 shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-meta font-bold ${on ? "border border-line bg-card text-ink" : "border border-transparent text-nav hover:text-ink"}`}>
               {f.label}
               <span className="text-xs text-muted">{count(f.id)}</span>
             </button>
@@ -42,18 +43,18 @@ export function RunsPage({ ctx }: { ctx: PageCtx }) {
       {shown.length === 0 ? (
         <EmptyState title={e.title} body={e.body}
           action={filter === "active" || filter === "all" ? (
-            <button onClick={ctx.startRun} disabled={ctx.accounts.length === 0} className="min-h-9 cursor-pointer rounded-lg bg-cta px-3.5 py-2 text-sm font-bold text-on-cta hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">Start a run</button>
+            <button onClick={ctx.startRun} disabled={ctx.accounts.length === 0} className={buttonCls("primary", "md")}>Start a run</button>
           ) : undefined} />
       ) : (
-        <div className="rounded-xl border border-line">
+        <div className="rounded-card border border-line">
           {blocks(shown).map((b) => b.groupId ? (
             <div key={b.groupId} className="border-b border-row last:border-b-0">
               <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-surface px-4 py-2.5">
                 <div className="flex min-w-0 flex-1 basis-[180px] flex-col">
-                  <span className="truncate text-[15px] font-bold">{b.runs[0].task}</span>
+                  <span className="truncate text-ui font-bold">{b.runs[0].task}</span>
                   <span className="text-xs text-muted">{groupSize(ctx.runs, b.groupId)} accounts in parallel</span>
                 </div>
-                <button onClick={() => { window.location.hash = `/compare/${b.groupId}`; }} className="min-h-9 cursor-pointer rounded-lg border border-line bg-card px-3 py-1.5 text-[13px] font-bold hover:bg-page">Compare</button>
+                <button onClick={() => { window.location.hash = `/compare/${b.groupId}`; }} className="min-h-9 cursor-pointer rounded-lg border border-line bg-card px-3 py-1.5 text-meta font-bold hover:bg-page">Compare</button>
               </div>
               {b.runs.map((r) => runRow(ctx, r))}
             </div>

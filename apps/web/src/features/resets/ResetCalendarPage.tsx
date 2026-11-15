@@ -1,5 +1,6 @@
 import { CrewAvatar } from "../../crew";
 import { EmptyState, type PageCtx } from "../../pages/shared";
+import { PageHeader } from "../../components/ui/PageHeader";
 import { countdown, useNow } from "../worker/useNow";
 
 type Kind = "five" | "week" | "day";
@@ -49,7 +50,7 @@ export function ResetCalendarPage({ ctx }: { ctx: PageCtx }) {
 
   const avatar = (id: string, size: number) => {
     const a = ctx.accounts.find((x) => x.id === id);
-    return a ? <CrewAvatar provider={a.provider} preset={a.api?.preset} size={size} state={a.usage.state} /> : null;
+    return a ? <CrewAvatar provider={a.provider} preset={a.api?.preset} name={a.name} size={size} state={a.usage.state} /> : null;
   };
 
   // Every entry is in the future, so the marker sits above the first entry.
@@ -65,22 +66,19 @@ export function ResetCalendarPage({ ctx }: { ctx: PageCtx }) {
       <button type="button" onClick={() => ctx.go(`accounts/${e.accountId}`)} aria-label={`Open ${e.name}`} className="flex min-h-11 min-w-[min(220px,100%)] flex-1 cursor-pointer items-center gap-3 text-left">
         {avatar(e.accountId, 36)}
         <span className="flex min-w-0 flex-col">
-          <span className="truncate text-[15px] font-bold">{e.name}</span>
+          <span className="truncate text-ui font-bold">{e.name}</span>
           <span className="truncate text-xs text-muted">{KIND_LABEL[e.kind]} resets at {timeOf(e.at)}</span>
         </span>
       </button>
       <span className={`hidden w-[64px] shrink-0 rounded-full px-2.5 py-0.5 text-center text-xs font-bold sm:inline-block ${KIND_CLS[e.kind]}`}>{KIND_SHORT[e.kind]}</span>
-      <span className="shrink-0 text-[13px] text-body sm:w-[110px]">frees up <span className="font-bold text-ink">{e.pct}%</span></span>
-      <span className="ml-auto shrink-0 text-right text-[13px] sm:w-[100px] font-bold tabular-nums">in {countdown(e.at / 1000, now)}</span>
+      <span className="shrink-0 text-meta text-body sm:w-[110px]">frees up <span className="font-bold text-ink">{e.pct}%</span></span>
+      <span className="ml-auto shrink-0 text-right text-meta sm:w-[100px] font-bold tabular-nums">in {countdown(e.at / 1000, now)}</span>
     </li>
   );
 
   return (
-    <div className="flex flex-col gap-5 px-4 py-6 sm:px-7">
-      <div className="flex flex-col gap-1">
-        <span className="text-sm text-body">Accounts · next 7 days</span>
-        <h1 className="text-[28px] font-bold tracking-[-0.03em] sm:text-[32px]">Reset calendar</h1>
-      </div>
+    <div className="flex flex-col gap-5">
+      <PageHeader eyebrow="Accounts · next 7 days" title="Reset calendar" />
 
       {entries.length === 0 ? (
         <EmptyState title="No resets coming up" body="Once an account reports a usage window with a reset time, it shows up here. Sign in to your accounts and let a reading come in." />
@@ -93,7 +91,7 @@ export function ResetCalendarPage({ ctx }: { ctx: PageCtx }) {
                 <span className="font-bold">Plan around it: </span>
                 {best.name} frees up {best.pct}% of its {KIND_SHORT[best.kind].toLowerCase()} window in <span className="font-bold tabular-nums">{countdown(best.at / 1000, now)}</span>, at {timeOf(best.at)}. Save a big task for then.
               </p>
-              <button type="button" onClick={() => ctx.go(`accounts/${best.accountId}`)} className="cursor-pointer min-h-9 rounded-lg border border-line bg-card px-3 py-1.5 text-[13px] font-bold hover:bg-surface">View account</button>
+              <button type="button" onClick={() => ctx.go(`accounts/${best.accountId}`)} className="cursor-pointer min-h-9 rounded-lg border border-line bg-card px-3 py-1.5 text-meta font-bold hover:bg-surface">View account</button>
             </section>
           )}
 
@@ -103,7 +101,7 @@ export function ResetCalendarPage({ ctx }: { ctx: PageCtx }) {
             {days.map(([d, list]) => (
               <section key={d} aria-label={dayTitle(d, today)} className="flex flex-col gap-2">
                 <h2 className={`text-sm font-bold ${d === today ? "text-action" : "text-ink"}`}>{dayTitle(d, today)}</h2>
-                <ul className="flex flex-col rounded-xl border border-line bg-card">{list.map(row)}</ul>
+                <ul className="flex flex-col rounded-card border border-line bg-card">{list.map(row)}</ul>
               </section>
             ))}
           </div>

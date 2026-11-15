@@ -1,20 +1,22 @@
 import { useEffect, useState } from "react";
 import { api, type Account, type CheckResult, type Run } from "../../api";
 import { CrewAvatar } from "../../crew";
-import { EmptyState, RUN_PILL, STATE_PILL, ago, type PageCtx } from "../../pages/shared";
+import { EmptyState, RUN_PILL, STATE_PILL, statePill, ago, type PageCtx } from "../../pages/shared";
 import { UsageChart, type Reading } from "./UsageChart";
+import { buttonCls } from "../../components/ui/Button";
+import { Skeleton } from "../../components/states";
 import { countdown, useNow } from "./useNow";
 
-const card = "flex flex-col gap-3.5 rounded-2xl border border-line bg-card p-4 sm:p-5";
+const card = "flex flex-col gap-3.5 rounded-card border border-line bg-card p-4 sm:p-5";
 const h2 = "text-lg font-bold";
-const btn = "min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40";
+const btn = "min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-meta font-bold hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40";
 
 function WindowTile({ label, win, now }: { label: string; win: { pct: number; resetsAt: number | null } | null | undefined; now: number }) {
   const pct = win?.pct;
   const tone = pct === undefined ? "bg-track" : pct >= 100 ? "bg-fail" : pct >= 85 ? "bg-warn" : "bg-ink";
   return (
     <div className="flex flex-col gap-1 border-b border-row py-3.5 first:pt-1 last:border-b-0 last:pb-1">
-      <span className="text-[13px] text-body">{label}</span>
+      <span className="text-meta text-body">{label}</span>
       {win ? (
         <>
           <span className="text-2xl font-bold tracking-[-0.02em] tabular-nums">{Math.round(win.pct)}%</span>
@@ -22,7 +24,7 @@ function WindowTile({ label, win, now }: { label: string; win: { pct: number; re
             <div className={`h-1.5 rounded-full ${tone}`} style={{ width: `${Math.min(100, win.pct)}%` }} />
           </div>
           <span className="text-xs font-bold tabular-nums text-body">
-            {win.resetsAt ? `resets in ${countdown(win.resetsAt, now)}` : "reset time unknown"}
+            {win.resetsAt && win.resetsAt * 1000 > now ? `resets in ${countdown(win.resetsAt, now)}` : "reset time unknown"}
           </span>
         </>
       ) : <span className="text-sm text-muted">Not reported by this account</span>}
@@ -44,7 +46,7 @@ function ApiCard({ a }: { a: Account }) {
   return (
     <section aria-labelledby="api-h" className={`${card} min-w-0`}>
       <h2 id="api-h" className={h2}>API account</h2>
-      <dl className="flex flex-col gap-1 text-[13px]">
+      <dl className="flex flex-col gap-1 text-meta">
         {row("Preset", cfg.preset)}
         {row("Model", cfg.model)}
         {row("Base URL", cfg.baseUrl)}
@@ -63,7 +65,7 @@ function ApiCard({ a }: { a: Account }) {
           {state === "busy" && <span aria-hidden className="size-3.5 animate-spin rounded-full border-2 border-line border-t-action" />}
           {state === "busy" ? "Testing..." : "Test connection"}
         </button>
-        <span role="status" className="text-[13px]">
+        <span role="status" className="text-meta">
           {state !== "idle" && state !== "busy" && (state.ok
             ? <span className="font-bold text-pass">Connected{typeof state.models === "number" ? `, ${state.models} ${state.models === 1 ? "model" : "models"}` : ""}</span>
             : <span className="font-bold text-fail">{state.error ?? "Could not connect"}</span>)}
@@ -79,7 +81,7 @@ function RunLine({ run, ctx }: { run: Run; ctx: PageCtx }) {
   return (
     <li className="flex items-center gap-3 border-t border-row py-2.5 first:border-t-0">
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-[15px] font-bold">{run.task}</span>
+        <span className="truncate text-ui font-bold">{run.task}</span>
         <span className="truncate text-xs text-muted">
           {run.branch} · {ago(run.startedAt)}{ch ? ` · ${ch.commits} ${ch.commits === 1 ? "commit" : "commits"}, ${ch.files} ${ch.files === 1 ? "file" : "files"}` : ""}
         </span>
@@ -116,16 +118,16 @@ export function WorkerDetailPage({ id, ctx }: { id: string; ctx: PageCtx }) {
     // No accounts at all means the board has not arrived yet; otherwise the id is stale.
     const loading = ctx.accounts.length === 0;
     return (
-      <div className="flex flex-col gap-5 px-4 py-6 sm:px-7">
+      <div className="flex flex-col gap-5">
         {back}
         {loading
-          ? <p role="status" className="rounded-xl border border-line bg-surface px-6 py-12 text-center text-sm text-muted">Loading account...</p>
-          : <EmptyState title="Account not found" body="This account was removed or the link is out of date. Pick one from the Accounts page." action={<button type="button" onClick={() => ctx.go("accounts")} className="cursor-pointer rounded-lg bg-cta px-3.5 py-2 text-sm font-bold text-on-cta hover:opacity-90">Back to accounts</button>} />}
+          ? <Skeleton rows={3} label="Loading account" />
+          : <EmptyState title="Account not found" body="This account was removed or the link is out of date. Pick one from the Accounts page." action={<button type="button" onClick={() => ctx.go("accounts")} className={buttonCls("primary", "md")}>Back to accounts</button>} />}
       </div>
     );
   }
 
-  const pill = STATE_PILL[a.usage.state];
+  const pill = statePill(a);
   const latest = a.usage.latest;
   const mine = ctx.runs.filter((r) => r.profileId === a.id);
   const active = mine.filter((r) => r.status === "active");
@@ -151,14 +153,14 @@ export function WorkerDetailPage({ id, ctx }: { id: string; ctx: PageCtx }) {
   };
 
   return (
-    <div className="flex flex-col gap-5 px-4 py-6 sm:px-7">
+    <div className="flex flex-col gap-5">
       {back}
 
-      <section aria-label="Account summary" className="flex flex-wrap items-center gap-4 rounded-2xl bg-cta p-4 sm:gap-5 sm:p-5 text-on-cta">
-        <CrewAvatar provider={a.provider} preset={a.api?.preset} size={96} state={a.usage.state} />
+      <section aria-label="Account summary" className="flex flex-wrap items-center gap-4 rounded-card bg-cta p-4 sm:gap-5 sm:p-5 text-on-cta">
+        <CrewAvatar provider={a.provider} preset={a.api?.preset} name={a.name} size={96} state={a.usage.state} />
         <div className="flex min-w-[min(240px,100%)] flex-1 flex-col gap-1.5">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-[26px] font-bold leading-9 tracking-[-0.03em] break-words sm:text-[30px]">{a.name}</h1>
+            <h1 className="text-[26px] font-bold leading-9 tracking-[-0.03em] break-words sm:text-3xl">{a.name}</h1>
             <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${pill.cls}`}>{pill.label}</span>
           </div>
           <p className="text-sm opacity-75">{a.plan || "No plan set"} · {a.provider}{created ? ` · added ${created}` : ""}</p>
@@ -166,9 +168,9 @@ export function WorkerDetailPage({ id, ctx }: { id: string; ctx: PageCtx }) {
         </div>
         <div className="flex w-full flex-wrap gap-2.5 sm:w-auto">
           {a.loginCommand && (
-            <button type="button" onClick={() => ctx.login(a)} className="cursor-pointer min-h-10 rounded-[9px] border border-on-cta/40 px-3.5 py-2.5 text-sm font-bold hover:bg-on-cta/10">Sign in</button>
+            <button type="button" onClick={() => ctx.login(a)} className="cursor-pointer min-h-10 rounded-lg border border-on-cta/40 px-3.5 py-2.5 text-sm font-bold hover:bg-on-cta/10">Sign in</button>
           )}
-          <button type="button" onClick={() => ctx.startRun()} className="cursor-pointer min-h-10 rounded-[9px] bg-action px-3.5 py-2.5 text-sm font-bold text-on-action hover:opacity-90">Start a run</button>
+          <button type="button" onClick={() => ctx.startRun()} className="cursor-pointer min-h-10 rounded-lg bg-action px-3.5 py-2.5 text-sm font-bold text-on-action hover:opacity-90">Start a run</button>
         </div>
       </section>
 
@@ -176,14 +178,14 @@ export function WorkerDetailPage({ id, ctx }: { id: string; ctx: PageCtx }) {
         <section aria-labelledby="hist-h" className={`${card} min-w-0`}>
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="hist-h" className={h2}>Usage history</h2>
-            <span className="text-[13px] text-body">{chartLabel} over time</span>
+            <span className="text-meta text-body">{chartLabel} over time</span>
           </div>
-          {hist === null ? <p role="status" className={empty}>Loading history...</p>
+          {hist === null ? <Skeleton rows={2} label="Loading history" />
             : hist === "error" ? <p className={empty}>History is not available right now</p>
             : <UsageChart readings={hist} label={chartLabel} />}
         </section>
 
-        <section aria-labelledby="win-h" className="flex min-w-0 flex-col rounded-2xl border border-line bg-card p-4 sm:p-5">
+        <section aria-labelledby="win-h" className="flex min-w-0 flex-col rounded-card border border-line bg-card p-4 sm:p-5">
           <h2 id="win-h" className="sr-only">Live windows</h2>
           <WindowTile label="5-hour window" win={latest?.fiveHour} now={now} />
           <WindowTile label="Weekly" win={latest?.sevenDay} now={now} />

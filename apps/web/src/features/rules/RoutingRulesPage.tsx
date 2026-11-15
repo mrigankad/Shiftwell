@@ -4,6 +4,9 @@ import { CrewAvatar } from "../../crew";
 import { EmptyState, PageTitle } from "../../pages/shared";
 import { Switch } from "../guardrails/controls";
 import { rulesApi, type PickResult, type Rule } from "./api";
+import { buttonCls } from "../../components/ui/Button";
+import { Skeleton } from "../../components/states";
+import { ErrorState } from "../../components/states";
 import { RuleDialog } from "./RuleDialog";
 
 const chip = "max-w-full rounded-lg [overflow-wrap:anywhere] bg-surface px-2.5 py-1 text-sm font-bold";
@@ -24,7 +27,7 @@ function Sentence({ rule, accounts }: { rule: Rule; accounts: Account[] }) {
       {who.length === 0 ? <span className={chip}>the account with most room</span> : who.map((a, i) => (
         <span key={a.id} className="flex min-w-0 items-center gap-2">
           {i > 0 && <span className="text-body">then</span>}
-          <span className={`${chip} flex min-w-0 items-center gap-1.5 !pl-1.5 [overflow-wrap:anywhere]`}><CrewAvatar provider={a.provider} preset={a.api?.preset} size={20} />{a.name}</span>
+          <span className={`${chip} flex min-w-0 items-center gap-1.5 !pl-1.5 [overflow-wrap:anywhere]`}><CrewAvatar provider={a.provider} preset={a.api?.preset} name={a.name} size={20} />{a.name}</span>
         </span>
       ))}
       {who.length > 0 && rule.fallback === "most-headroom" && <span className="text-body">else most room</span>}
@@ -44,10 +47,10 @@ function TryIt({ accounts }: { accounts: Account[] }) {
     try { setResult(await rulesApi.pick(task, repo.trim())); } catch (err) { setError((err as Error).message); } finally { setBusy(false); }
   };
   const chosen = accounts.find((a) => a.id === result?.profileId);
-  const field = "rounded-lg border border-line bg-card px-3 py-2.5 text-[15px] outline-none focus:border-action";
+  const field = "rounded-lg border border-line bg-card px-3 py-2.5 text-ui outline-none focus:border-action";
   return (
-    <form onSubmit={go} aria-labelledby="try-title" className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-5">
-      <h2 id="try-title" className="text-[18px] font-bold">Try it</h2>
+    <form onSubmit={go} aria-labelledby="try-title" className="flex flex-col gap-3 rounded-card border border-line bg-card p-5">
+      <h2 id="try-title" className="text-lg font-bold">Try it</h2>
       <p className="text-sm leading-6 text-body">Type a task and see which account the rules would pick right now. Nothing is started.</p>
       <label className="flex flex-col gap-1.5 text-sm font-bold">
         Task
@@ -57,7 +60,7 @@ function TryIt({ accounts }: { accounts: Account[] }) {
         Repository path (optional)
         <input value={repo} onChange={(e) => setRepo(e.target.value)} placeholder="C:\code\web" className={`${field} font-normal`} />
       </label>
-      <button type="submit" disabled={busy || !task.trim()} className="min-h-9 cursor-pointer self-start rounded-lg bg-cta px-4 py-2 text-sm font-bold text-on-cta disabled:cursor-not-allowed disabled:opacity-40">
+      <button type="submit" disabled={busy || !task.trim()} className={buttonCls("primary", "md", "self-start")}>
         {busy ? "Picking" : "Pick an account"}
       </button>
       <div aria-live="polite">
@@ -67,9 +70,9 @@ function TryIt({ accounts }: { accounts: Account[] }) {
             {result.profileId ? (
               <div className="flex items-center gap-2.5">
                 {chosen && <CrewAvatar provider={chosen.provider} preset={chosen.api?.preset} size={32} state={chosen.usage.state} />}
-                <span className="text-[17px] font-bold">{result.profileName}</span>
+                <span className="text-title font-bold">{result.profileName}</span>
               </div>
-            ) : <span className="text-[17px] font-bold">No account right now</span>}
+            ) : <span className="text-title font-bold">No account right now</span>}
             <p className="text-sm leading-6 text-body">{result.reason}</p>
           </div>
         )}
@@ -119,7 +122,7 @@ export function RoutingRulesPage({ accounts }: { accounts: Account[] }) {
     return (
       <div className="flex flex-col gap-6">
         <PageTitle title="Routing rules" />
-        {error ? <EmptyState title="Could not load rules" body={error} /> : <p role="status" className="text-sm text-muted">Loading</p>}
+        {error ? <ErrorState title="Could not load rules" body={error} /> : <Skeleton rows={3} label="Loading rules" />}
       </div>
     );
   }
@@ -144,17 +147,17 @@ export function RoutingRulesPage({ accounts }: { accounts: Account[] }) {
                   <button type="button" aria-label={`Move ${r.name} up`} disabled={i === 0} onClick={() => move(i, -1)} className={arrow}>
                     <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 7.5L6 4l3.5 3.5" /></svg>
                   </button>
-                  <span aria-hidden className="text-[13px] font-bold text-muted">{i + 1}</span>
+                  <span aria-hidden className="text-meta font-bold text-muted">{i + 1}</span>
                   <button type="button" aria-label={`Move ${r.name} down`} disabled={i === rules.length - 1} onClick={() => move(i, 1)} className={arrow}>
                     <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 4.5L6 8l3.5-3.5" /></svg>
                   </button>
                 </div>
                 <div className="flex min-w-0 basis-[calc(100%-3rem)] flex-col gap-1.5 sm:flex-1 sm:basis-0">
-                  <span className="text-[13px] font-bold text-muted">{r.name}</span>
+                  <span className="text-meta font-bold text-muted">{r.name}</span>
                   <Sentence rule={r} accounts={accounts} />
                 </div>
                 <button type="button" onClick={() => setEditing(r)} aria-label={`Edit ${r.name}`}
-                  className="ml-auto min-h-9 shrink-0 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface sm:ml-0">Edit</button>
+                  className="ml-auto min-h-9 shrink-0 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-meta font-bold hover:bg-surface sm:ml-0">Edit</button>
                 <Switch label={`${r.name} is on`} checked={r.enabled} onChange={(v) => void toggle(r, v)} />
               </li>
             ))}

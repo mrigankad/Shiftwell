@@ -16,10 +16,10 @@ export function Legend() {
   const steps = [0, 25, 50, 75, 85, 100];
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-      <span className="inline-flex items-center gap-1.5"><span className="size-3.5 rounded-[4px] border border-line bg-surface" />No reading</span>
+      <span className="inline-flex items-center gap-1.5"><span className="size-3.5 rounded-sm border border-line bg-surface" />No reading</span>
       <span className="pl-2">Peak usage</span>
       <span>0%</span>
-      <div className="flex gap-0.5">{steps.map((s) => <span key={s} className="size-3.5 rounded-[4px]" style={{ background: heatColor(s) }} />)}</div>
+      <div className="flex gap-0.5">{steps.map((s) => <span key={s} className="size-3.5 rounded-sm" style={{ background: heatColor(s) }} />)}</div>
       <span>100%</span>
     </div>
   );
@@ -65,14 +65,14 @@ export function Heatmap({ heat, label }: { heat: (number | null)[][]; label: str
               onMouseEnter={(e) => show(d, h, e.currentTarget)}
               onFocus={(e) => { setFocus({ d, h }); show(d, h, e.currentTarget); }}
               onBlur={() => setTip(null)}
-              className="h-7 rounded-[5px] border border-line outline-none focus-visible:ring-2 focus-visible:ring-action"
+              className="h-7 rounded-sm border border-line outline-none focus-visible:ring-2 focus-visible:ring-action"
               style={{ background: heatColor(at(d, h)) }} />
           ))}
         </div>
       ))}
       <span aria-hidden className="sticky left-0 bg-card" />
       {Array.from({ length: 24 }, (_, h) => (
-        <span key={h} aria-hidden className="relative h-4 text-[11px] text-muted">
+        <span key={h} aria-hidden className="relative h-4 text-2xs text-muted">
           {h % 3 === 0 && <span className="absolute left-0 whitespace-nowrap">{String(h).padStart(2, "0")}</span>}
         </span>
       ))}

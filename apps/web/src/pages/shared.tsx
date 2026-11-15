@@ -1,4 +1,7 @@
-import { useEffect, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
+import { Button, buttonCls } from "../components/ui/Button";
+import { Menu } from "../components/ui/Menu";
+import { ago } from "../lib/time";
 import type { Account, Provider, Run, State } from "../api";
 import { CrewAvatar } from "../crew";
 
@@ -10,22 +13,18 @@ export const STATE_PILL: Record<State, { label: string; cls: string }> = {
   out: { label: "Out", cls: "bg-fail-soft text-fail" },
 };
 
+/** The pill for an account. Old readings never show as live state. */
+export function statePill(a: Account): { label: string; cls: string } {
+  return a.usage.stale && a.usage.latest ? { label: "Stale", cls: "bg-surface text-muted" } : STATE_PILL[a.usage.state];
+}
+
 export const RUN_PILL: Record<Run["status"], { label: string; cls: string }> = {
   active: { label: "Active", cls: "bg-action-soft text-action" },
   "handed-off": { label: "Handed off", cls: "bg-surface text-body" },
   done: { label: "Done", cls: "bg-pass-soft text-pass" },
 };
 
-export function resetIn(resetsAt: number | null | undefined): string {
-  if (!resetsAt) return "n/a";
-  const min = Math.max(0, Math.round((resetsAt * 1000 - Date.now()) / 60000));
-  return min >= 60 ? `${Math.floor(min / 60)}h ${String(min % 60).padStart(2, "0")}m` : `${min}m`;
-}
-
-export function ago(iso: string): string {
-  const m = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
-  return m < 60 ? `${m} min ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`;
-}
+export { ago, resetIn } from "../lib/time";
 
 export function Bar({ pct }: { pct: number | null | undefined }) {
   if (pct === null || pct === undefined) return <span className="text-sm text-muted">n/a</span>;
@@ -35,13 +34,15 @@ export function Bar({ pct }: { pct: number | null | undefined }) {
       <div className="h-1.5 min-w-0 max-w-[180px] flex-1 rounded-full bg-track">
         <div className={`h-1.5 rounded-full ${color}`} style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
-      <span className="w-10 text-[13px] font-bold tabular-nums">{Math.round(pct)}%</span>
+      <span className="w-10 text-meta font-bold tabular-nums">{Math.round(pct)}%</span>
     </div>
   );
 }
 
 /** Everything a page needs from the app shell. */
 export interface PageCtx {
+  /** Shared clock from the shell, so relative times re-render together. */
+  now: number;
   accounts: Account[];
   runs: Run[];
   nameOf: (id: string) => string;
@@ -67,77 +68,49 @@ export function runRow(ctx: PageCtx, r: Run): ReactNode {
 }
 
 export function runList(ctx: PageCtx, list: Run[]): ReactNode {
-  return <div className="rounded-xl border border-line">{list.map((r) => runRow(ctx, r))}</div>;
+  return <div className="rounded-card border border-line bg-card">{list.map((r) => runRow(ctx, r))}</div>;
 }
 
-export function PageTitle({ eyebrow, title, children }: { eyebrow?: string; title: string; children?: ReactNode }) {
-  return (
-    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
-      <div className="flex min-w-0 flex-col gap-1">
-        {eyebrow && <span className="text-sm text-body">{eyebrow}</span>}
-        <h1 className="text-[26px] font-bold tracking-[-0.03em] sm:text-[32px]">{title}</h1>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-export function EmptyState({ title, body, action }: { title: string; body: string; action?: ReactNode }) {
-  return (
-    <div className="flex flex-col items-center gap-2 rounded-xl border border-line bg-surface px-5 py-10 text-center sm:px-6 sm:py-12">
-      <span className="text-[17px] font-bold">{title}</span>
-      <p className="max-w-[460px] text-sm leading-6 text-body">{body}</p>
-      {action && <div className="pt-2">{action}</div>}
-    </div>
-  );
-}
+/** Kept as an alias so older imports keep working; new code imports PageHeader from components/ui. */
+export { PageHeader as PageTitle } from "../components/ui/PageHeader";
+export { EmptyState } from "../components/states";
 
 export function RunRow({ run, name, provider, preset, fromName, accounts, onOpen, onFinish, onHandOff }: {
   run: Run; name: string; provider: Provider; preset?: string; fromName?: string; accounts: Account[];
   onOpen: () => void; onFinish: () => void; onHandOff: (toId: string) => void;
 }) {
-  const [picking, setPicking] = useState(false);
   const pill = RUN_PILL[run.status];
   const targets = accounts.filter((a) => a.id !== run.profileId);
-  useEffect(() => {
-    if (!picking) return;
-    const close = (e: KeyboardEvent) => { if (e.key === "Escape") setPicking(false); };
-    window.addEventListener("keydown", close);
-    return () => window.removeEventListener("keydown", close);
-  }, [picking]);
   const ch = run.changes;
   const changeText = ch ? ` · ${ch.commits} ${ch.commits === 1 ? "commit" : "commits"}, ${ch.files} ${ch.files === 1 ? "file" : "files"}` : "";
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-2.5 border-b border-row px-4 py-3 last:border-b-0 md:flex-nowrap">
-      <CrewAvatar provider={provider} preset={preset} size={32} />
+      <CrewAvatar provider={provider} preset={preset} size={32} name={name} />
       <div className="flex min-w-0 flex-1 basis-[180px] flex-col">
-        <span className="line-clamp-2 text-[15px] font-bold md:truncate">{run.task}</span>
+        <a href={`#/live/${run.id}`} title="Open live view" className="truncate text-ui font-bold hover:underline">{run.task}</a>
         <span className="text-xs text-muted [overflow-wrap:anywhere] md:truncate">
           {name}{fromName ? ` · picked up from ${fromName}` : ""} · {run.branch} · {ago(run.startedAt)}{changeText}{run.worktreeRemoved ? " · folder removed" : ""}
         </span>
       </div>
       <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${pill.cls}`}>{pill.label}</span>
-      <div className="relative flex w-full flex-wrap gap-1.5 md:w-auto md:shrink-0 md:justify-end lg:w-[230px]">
+      <div className="flex w-full flex-wrap gap-1.5 md:w-auto md:shrink-0 md:justify-end lg:w-[290px]">
         {run.status === "active" && (
           <>
-            <button onClick={onOpen} className="min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Open</button>
-            <button onClick={() => setPicking((v) => !v)} disabled={targets.length === 0} aria-expanded={picking}
-              className="min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40">Hand off</button>
-            <button onClick={onFinish} className="min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Done</button>
+            <a href={`#/live/${run.id}`} className={buttonCls("secondary", "sm")}>Live</a>
+            <Button size="sm" onClick={onOpen}>Open</Button>
+            <Menu label="Hand off" heading="Hand off to" disabled={targets.length === 0}
+              items={targets.map((a) => ({
+                key: a.id, onSelect: () => onHandOff(a.id),
+                label: (
+                  <>
+                    <CrewAvatar provider={a.provider} preset={a.api?.preset} size={24} state={a.usage.state} name={a.name} />
+                    <span className="flex-1 font-bold">{a.name}</span>
+                    <span className="text-xs text-muted">{STATE_PILL[a.usage.state].label}</span>
+                  </>
+                ),
+              }))} />
+            <Button size="sm" onClick={onFinish}>Done</Button>
           </>
-        )}
-        {picking && (
-          <div role="menu" className="absolute left-0 top-11 z-10 flex w-[min(240px,calc(100vw-48px))] flex-col gap-0.5 rounded-xl border border-line bg-card p-1.5 shadow-xl md:left-auto md:right-0">
-            <span className="px-2 py-1 text-xs font-bold text-muted">Hand off to</span>
-            {targets.map((a) => (
-              <button role="menuitem" key={a.id} onClick={() => { setPicking(false); onHandOff(a.id); }}
-                className="flex min-h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-surface">
-                <CrewAvatar provider={a.provider} preset={a.api?.preset} size={24} state={a.usage.state} />
-                <span className="flex-1 font-bold">{a.name}</span>
-                <span className="text-xs text-muted">{STATE_PILL[a.usage.state].label}</span>
-              </button>
-            ))}
-          </div>
         )}
       </div>
     </div>

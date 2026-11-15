@@ -1,3 +1,4 @@
+import { http } from "./lib/http";
 export type Provider = "claude" | "codex" | "gemini" | "api";
 export type State = "unknown" | "room" | "on" | "low" | "out";
 
@@ -47,39 +48,40 @@ export interface Insights {
   crewHeadroomNow: number | null; bestNext: { id: string; name: string; reason: string } | null;
 }
 
-async function json<T>(res: Response): Promise<T> {
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((body as { error?: string }).error ?? `Request failed (${res.status})`);
-  return body as T;
-}
-
-const post = <T>(url: string, body: unknown) =>
-  fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(json<T>);
+const post = <T>(url: string, body: unknown) => http.post<T>(url, body);
 
 export const api = {
   createProfile: (input: CreateProfileInput) =>
-    fetch("/api/profiles", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }).then(json<Account>),
-  presets: () => fetch("/api/presets").then(json<Preset[]>),
+    post<Account>("/api/profiles", input),
+  presets: () => http.get<Preset[]>("/api/presets"),
   checkProfile: (id: string) => post<CheckResult>(`/api/profiles/${id}/check`, {}),
-  removeProfile: (id: string) => fetch(`/api/profiles/${id}`, { method: "DELETE" }).then(json),
+  removeProfile: (id: string) => http.del(`/api/profiles/${id}`),
   startRun: (input: { profileId: string; repo: string; task: string }) => post<Run>("/api/runs", input),
   handOff: (runId: string, toProfileId: string, reason?: string) => post<{ run: Run; note: string }>(`/api/runs/${runId}/handoff`, { toProfileId, reason }),
   startRuns: (input: { profileIds: string[]; repo: string; task: string }) => post<{ groupId: string; runs: Run[] }>("/api/runs", input),
   finishRun: (runId: string, opts: { removeWorktree?: boolean } = {}) =>
     post<Run & { worktreeRemoved?: true; warning?: string }>(`/api/runs/${runId}/finish`, opts),
   pruneRuns: () => post<{ pruned: number }>("/api/runs/prune", {}),
-  group: (groupId: string) => fetch(`/api/groups/${encodeURIComponent(groupId)}`).then(json<RunGroup>),
+  group: (groupId: string) => http.get<RunGroup>(`/api/groups/${encodeURIComponent(groupId)}`),
   openRun: (runId: string) => post<{ ok: true }>(`/api/runs/${runId}/open`, {}),
-  note: (runId: string) => fetch(`/api/runs/${runId}/note`).then(json<{ note: string }>),
-  history: (profileId: string) => fetch(`/api/profiles/${profileId}/history`).then(json<NonNullable<Account["usage"]["latest"]>[]>),
-  insights: () => fetch("/api/insights").then(json<Insights>),
-  openLogin: (id: string) => fetch(`/api/profiles/${id}/login`, { method: "POST" }).then(json<{ command: string }>),
+  note: (runId: string) => http.get<{ note: string }>(`/api/runs/${runId}/note`),
+  history: (profileId: string) => http.get<NonNullable<Account["usage"]["latest"]>[]>(`/api/profiles/${profileId}/history`),
+  insights: () => http.get<Insights>("/api/insights"),
+  openLogin: (id: string) => post<{ command: string }>(`/api/profiles/${id}/login`, {}),
 };
 
 /** Live board via server-sent events, with reconnect handled by EventSource. */
 export function subscribe(onBoard: (b: Board) => void, onStatus: (connected: boolean) => void) {
   const es = new EventSource("/api/events");
-  es.onmessage = (e) => { onStatus(true); onBoard(JSON.parse(e.data)); };
+  let last = "";
+  es.onmessage = (e) => {
+    onStatus(true);
+    // Skip boards that only differ by their timestamp, so the tree does not re-render every tick for nothing.
+    const key = (e.data as string).replace(/"generatedAt":"[^"]*",?/, "");
+    if (key === last) return;
+    last = key;
+    onBoard(JSON.parse(e.data));
+  };
   es.onerror = () => onStatus(false);
   return () => es.close();
 }

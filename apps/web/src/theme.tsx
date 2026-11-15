@@ -30,10 +30,19 @@ export function ThemeSwitch({ value, onChange }: { value: ThemeChoice; onChange:
     { id: "light", label: "Day" },
     { id: "night", label: "Night" },
   ];
+  const onKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const d = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    if (!d) return;
+    e.preventDefault();
+    const i = opts.findIndex((o) => o.id === value);
+    const next = opts[(i + d + opts.length) % opts.length].id;
+    onChange(next);
+    e.currentTarget.querySelector<HTMLButtonElement>(`[data-id="${next}"]`)?.focus();
+  };
   return (
-    <div role="radiogroup" aria-label="Theme" className="grid grid-cols-3 gap-0.5 rounded-lg border border-line bg-card p-0.5">
+    <div role="radiogroup" aria-label="Theme" onKeyDown={onKey} className="grid grid-cols-3 gap-0.5 rounded-lg border border-line bg-card p-0.5">
       {opts.map((o) => (
-        <button key={o.id} type="button" role="radio" aria-checked={value === o.id} onClick={() => onChange(o.id)}
+        <button key={o.id} data-id={o.id} type="button" role="radio" aria-checked={value === o.id} tabIndex={value === o.id ? 0 : -1} onClick={() => onChange(o.id)}
           className={`cursor-pointer rounded-md py-1 text-xs font-bold ${value === o.id ? "bg-cta text-on-cta" : "text-body hover:text-ink"}`}>
           {o.label}
         </button>

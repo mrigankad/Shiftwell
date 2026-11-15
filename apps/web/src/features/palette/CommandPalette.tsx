@@ -62,7 +62,7 @@ function PaletteDialog({ commands, onClose }: { commands: Command[]; onClose: ()
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-3 pt-[8vh] sm:px-6 sm:pt-[14vh]" onMouseDown={onClose}>
       <div role="dialog" aria-modal="true" aria-label="Command palette" onKeyDown={onKey} onMouseDown={(e) => e.stopPropagation()}
-        className="flex max-h-[80dvh] sm:max-h-[70vh] w-full max-w-[640px] flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-2xl">
+        className="flex max-h-[80dvh] sm:max-h-[70vh] w-full max-w-[640px] flex-col overflow-hidden rounded-card border border-line bg-card shadow-2xl">
         <div className="flex items-center gap-3 border-b border-line px-4 py-3.5 sm:px-5 sm:py-4">
           <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="shrink-0 text-muted">
             <circle cx="8" cy="8" r="5.5" /><path d="M12.5 12.5L16 16" />
@@ -70,7 +70,7 @@ function PaletteDialog({ commands, onClose }: { commands: Command[]; onClose: ()
           <input ref={inputRef} value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Type a command or an account name"
             role="combobox" aria-expanded="true" aria-controls="palette-list" aria-autocomplete="list" aria-label="Search commands"
             aria-activedescendant={results[active] ? `palette-opt-${active}` : undefined}
-            className="min-w-0 flex-1 bg-transparent text-[17px] font-bold text-ink outline-none placeholder:font-normal placeholder:text-muted" />
+            className="min-w-0 flex-1 bg-transparent text-title font-bold text-ink outline-none placeholder:font-normal placeholder:text-muted" />
           <kbd className={kbd}>Esc</kbd>
         </div>
 
@@ -86,8 +86,8 @@ function PaletteDialog({ commands, onClose }: { commands: Command[]; onClose: ()
                   {cmd.icon ?? <span aria-hidden className={`size-2 rounded-full ${idx === active ? "bg-shift" : "bg-track"}`} />}
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-[15px] font-bold">{cmd.label}</span>
-                  {cmd.hint && <span className="truncate text-[13px] text-body">{cmd.hint}</span>}
+                  <span className="truncate text-ui font-bold">{cmd.label}</span>
+                  {cmd.hint && <span className="truncate text-meta text-body">{cmd.hint}</span>}
                 </span>
                 {idx === active ? <kbd className={kbd}>Enter</kbd> : cmd.shortcut && <kbd className={kbd}>{cmd.shortcut}</kbd>}
               </div>

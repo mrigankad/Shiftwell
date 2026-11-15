@@ -1,3 +1,5 @@
+import { http, request } from "../../lib/http";
+
 export interface Rule {
   id: string;
   name: string;
@@ -9,17 +11,10 @@ export interface Rule {
 export type RuleInput = Omit<Rule, "id">;
 export interface PickResult { profileId: string | null; profileName: string | null; ruleId: string | null; reason: string }
 
-async function json<T>(res: Response): Promise<T> {
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((body as { error?: string }).error ?? `Request failed (${res.status})`);
-  return body as T;
-}
-
-const send = <T>(method: string, url: string, body?: unknown) =>
-  fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) }).then(json<T>);
+const send = <T>(method: string, url: string, body?: unknown) => request<T>(method, url, body);
 
 export const rulesApi = {
-  list: () => fetch("/api/rules").then(json<Rule[]>),
+  list: () => http.get<Rule[]>("/api/rules"),
   create: (r: RuleInput) => send<Rule>("POST", "/api/rules", r),
   update: (id: string, r: RuleInput) => send<Rule>("PUT", `/api/rules/${encodeURIComponent(id)}`, r),
   remove: (id: string) => send<{ ok: true }>("DELETE", `/api/rules/${encodeURIComponent(id)}`),

@@ -4,6 +4,7 @@ import { CrewAvatar } from "../crew";
 import { Segmented } from "../ui";
 import { Listbox } from "../components/Listbox";
 import { Heatmap, Legend } from "../components/Heatmap";
+import { Skeleton } from "../components/states";
 import { EmptyState, PageTitle, type PageCtx } from "./shared";
 
 const CREW = "__crew__";
@@ -21,14 +22,14 @@ function useInsights() {
       .catch((e: Error) => { if (live) setError(e.message); });
     return () => { live = false; };
   }, [tick]);
-  useEffect(() => { const t = setInterval(() => setTick((n) => n + 1), 60_000); return () => clearInterval(t); }, []);
+  useEffect(() => { const t = setInterval(() => { if (!document.hidden) setTick((n) => n + 1); }, 60_000); return () => clearInterval(t); }, []);
   return { data, error, retry: () => setTick((n) => n + 1) };
 }
 
 function Tile({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex min-h-[112px] flex-col gap-2 rounded-xl border border-line bg-card p-4 sm:p-5">
-      <span className="text-[13px] font-bold text-muted">{label}</span>
+    <div className="flex min-h-[112px] flex-col gap-2 rounded-card border border-line bg-card p-4 sm:p-5">
+      <span className="text-meta font-bold text-muted">{label}</span>
       {children}
     </div>
   );
@@ -56,7 +57,7 @@ function AccountTable({ accounts }: { accounts: InsightAccount[] }) {
   const head = (k: SortKey, text: string, right = true) => (
     <th scope="col" aria-sort={key === k ? (dir === "asc" ? "ascending" : "descending") : "none"} className={`px-4 py-2.5 ${right ? "text-right" : "text-left"}`}>
       <button type="button" onClick={() => { if (k === key) setDir(dir === "asc" ? "desc" : "asc"); else { setKey(k); setDir(k === "name" ? "asc" : "desc"); } }}
-        className={`inline-flex cursor-pointer items-center gap-1 rounded-md text-[13px] font-bold hover:text-ink ${key === k ? "text-ink" : "text-muted"}`}>
+        className={`inline-flex cursor-pointer items-center gap-1 rounded-md text-meta font-bold hover:text-ink ${key === k ? "text-ink" : "text-muted"}`}>
         {text}
         <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: key === k ? 1 : 0.35, transform: key === k && dir === "asc" ? "rotate(180deg)" : undefined }}>
           <path d="M2 3.5l3 3 3-3" />
@@ -68,12 +69,12 @@ function AccountTable({ accounts }: { accounts: InsightAccount[] }) {
     <>
     <ul role="list" aria-label="Per account usage" className="flex flex-col gap-3 md:hidden">
       {rows.map((a) => (
-        <li key={a.id} className="flex flex-col gap-3 rounded-xl border border-line bg-card p-4">
+        <li key={a.id} className="flex flex-col gap-3 rounded-card border border-line bg-card p-4">
           <div className="flex items-center gap-2.5">
             <CrewAvatar provider={a.provider} preset={a.preset} size={28} />
             <span className="min-w-0 truncate font-bold">{a.name}</span>
           </div>
-          <dl className="grid grid-cols-2 gap-3 text-[13px]">
+          <dl className="grid grid-cols-2 gap-3 text-meta">
             <div><dt className="text-muted">Readings</dt><dd className="font-bold tabular-nums">{a.readingsLast7d}</dd></div>
             <div><dt className="text-muted">Peak</dt><dd className="font-bold tabular-nums">{fmtPct(a.peakLast7d)}</dd></div>
             <div><dt className="text-muted">Avg daily peak</dt><dd className="font-bold tabular-nums">{fmtPct(a.avgDailyPeak)}</dd></div>
@@ -82,7 +83,7 @@ function AccountTable({ accounts }: { accounts: InsightAccount[] }) {
         </li>
       ))}
     </ul>
-    <div className="hidden overflow-x-auto rounded-xl border border-line bg-card md:block">
+    <div className="hidden overflow-x-auto rounded-card border border-line bg-card md:block">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-row bg-surface">
@@ -128,20 +129,20 @@ export function InsightsPage(_: { ctx: PageCtx }) {
   const title = <PageTitle title="Insights" eyebrow="The last 7 days across the crew" />;
   if (!data) {
     return (
-      <div className="flex flex-col gap-5 px-4 py-6 sm:px-7">
+      <div className="flex flex-col gap-5">
         {title}
         {error ? (
           <EmptyState title="Could not load insights" body={error}
             action={<button onClick={retry} className="cursor-pointer rounded-lg border border-line px-3.5 py-2 text-sm font-bold hover:bg-surface">Try again</button>} />
         ) : (
-          <div role="status" className="rounded-xl border border-line bg-surface px-6 py-12 text-center text-sm text-muted">Loading insights...</div>
+          <Skeleton rows={4} label="Loading insights" />
         )}
       </div>
     );
   }
   if (accounts.length === 0 || accounts.every((a) => a.readingsLast7d === 0)) {
     return (
-      <div className="flex flex-col gap-5 px-4 py-6 sm:px-7">
+      <div className="flex flex-col gap-5">
         {title}
         <EmptyState title="No readings yet" body="Insights appear once the crew has a few usage readings. Keep the service running and check back after some work." />
       </div>
@@ -154,37 +155,37 @@ export function InsightsPage(_: { ctx: PageCtx }) {
   const head = data.crewHeadroomNow;
 
   return (
-    <div className="flex flex-col gap-5 px-4 py-6 sm:px-7">
+    <div className="flex flex-col gap-5">
       {title}
-      {error && <p role="alert" className="rounded-lg bg-fail-soft px-3 py-2 text-[13px] font-bold text-fail">Could not refresh: {error}. Showing the last data.</p>}
+      {error && <p role="alert" className="rounded-lg bg-fail-soft px-3 py-2 text-meta font-bold text-fail">Could not refresh: {error}. Showing the last data.</p>}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Tile label="Crew headroom now">
-          <span className="text-[32px] font-bold leading-none tracking-[-0.03em]">{head === null ? "n/a" : `${Math.round(head)}%`}</span>
-          <span className="text-[13px] text-body">{head === null ? "No live readings yet" : "of the crew's capacity is free"}</span>
+          <span className="text-h1 font-bold leading-none tracking-[-0.03em]">{head === null ? "n/a" : `${Math.round(head)}%`}</span>
+          <span className="text-meta text-body">{head === null ? "No live readings yet" : "of the crew's capacity is free"}</span>
         </Tile>
         <Tile label="Best next account">
           {data.bestNext ? (
             <div className="flex items-start gap-3">
               <CrewAvatar provider={best?.provider ?? "api"} preset={best?.preset} size={40} />
               <div className="flex min-w-0 flex-col">
-                <span className="truncate text-[17px] font-bold">{data.bestNext.name}</span>
-                <span className="text-[13px] leading-[18px] text-body">{data.bestNext.reason}</span>
+                <span className="truncate text-title font-bold">{data.bestNext.name}</span>
+                <span className="text-meta leading-[18px] text-body">{data.bestNext.reason}</span>
               </div>
             </div>
-          ) : <span className="text-[13px] text-body">No clear pick right now</span>}
+          ) : <span className="text-meta text-body">No clear pick right now</span>}
         </Tile>
         <Tile label="Hours at limit this week">
-          <span className={`text-[32px] font-bold leading-none tracking-[-0.03em] ${totalHours > 0 ? "text-fail" : ""}`}>{fmtHours(totalHours)}</span>
-          <span className="text-[13px] text-body">added up across {accounts.length} {accounts.length === 1 ? "account" : "accounts"}</span>
+          <span className={`text-h1 font-bold leading-none tracking-[-0.03em] ${totalHours > 0 ? "text-fail" : ""}`}>{fmtHours(totalHours)}</span>
+          <span className="text-meta text-body">added up across {accounts.length} {accounts.length === 1 ? "account" : "accounts"}</span>
         </Tile>
       </div>
 
-      <section aria-labelledby="heat-h" className="flex min-w-0 flex-col gap-4 rounded-xl border border-line bg-card p-4 sm:p-5">
+      <section aria-labelledby="heat-h" className="flex min-w-0 flex-col gap-4 rounded-card border border-line bg-card p-4 sm:p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-col gap-0.5">
-            <h2 id="heat-h" className="text-[17px] font-bold">When you hit limits</h2>
-            <span className="text-[13px] text-body">Highest usage seen in each hour of the week{selected ? ` for ${selected.name}` : ", across the crew"}.</span>
+            <h2 id="heat-h" className="text-title font-bold">When you hit limits</h2>
+            <span className="text-meta text-body">Highest usage seen in each hour of the week{selected ? ` for ${selected.name}` : ", across the crew"}.</span>
           </div>
           {accounts.length <= 3
             ? <Segmented label="Account" value={who} onChange={setWho} options={opts} />

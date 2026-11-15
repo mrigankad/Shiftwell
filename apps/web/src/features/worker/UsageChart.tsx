@@ -5,7 +5,7 @@ export type Reading = NonNullable<Account["usage"]["latest"]>;
 export const pctOf = (r: Reading) => (r.daily ?? r.fiveHour)?.pct ?? null;
 
 /** Usage history chart, same drawing as the Accounts page card. */
-export function UsageChart({ readings, label }: { readings: Reading[]; label: string }) {
+export function UsageChart({ readings, label, height = 160 }: { readings: Reading[]; label: string; height?: number }) {
   const gid = useId();
   const box = useRef<HTMLDivElement>(null);
   const [W, setW] = useState(560);
@@ -22,7 +22,7 @@ export function UsageChart({ readings, label }: { readings: Reading[]; label: st
     .sort((a, b) => a.t - b.t);
   if (pts.length === 0) return <div ref={box}><p className="rounded-lg bg-surface px-3 py-6 text-center text-sm text-muted">No readings yet</p></div>;
 
-  const H = 160, L = 36, R = 8, T = 8, B = 20;
+  const H = height, L = 36, R = 8, T = 8, B = 20;
   const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
   const x = (t: number) => (t1 === t0 ? L + (W - L - R) / 2 : L + ((t - t0) / (t1 - t0)) * (W - L - R));
   const y = (v: number) => T + (1 - Math.min(100, Math.max(0, v)) / 100) * (H - T - B);

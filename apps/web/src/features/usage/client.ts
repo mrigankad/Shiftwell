@@ -1,11 +1,7 @@
+import { http } from "../../lib/http";
 import type { Board, Insights } from "../../api";
 
-async function get<T>(url: string): Promise<T> {
-  const res = await fetch(url);
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((body as { error?: string }).error ?? `Request failed (${res.status})`);
-  return body as T;
-}
+const get = <T>(url: string) => http.get<T>(url);
 
 /** Small fetch client for the usage and recap features. No api.ts changes needed. */
 export const usageApi = {

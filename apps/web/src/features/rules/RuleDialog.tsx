@@ -3,9 +3,10 @@ import type { Account } from "../../api";
 import { Modal, Segmented } from "../../ui";
 import { Switch } from "../guardrails/controls";
 import { OrderedPicker } from "./OrderedPicker";
+import { buttonCls } from "../../components/ui/Button";
 import type { Rule, RuleInput } from "./api";
 
-const field = "rounded-lg border border-line bg-card px-3 py-2.5 text-[15px] outline-none focus:border-action";
+const field = "rounded-lg border border-line bg-card px-3 py-2.5 text-ui outline-none focus:border-action";
 
 export function RuleDialog({ rule, accounts, onClose, onSave, onDelete }: {
   rule: Rule | null;
@@ -36,7 +37,7 @@ export function RuleDialog({ rule, accounts, onClose, onSave, onDelete }: {
     <Modal titleId="rule-title" onClose={onClose} onSubmit={submit} width={560}>
       <div className="-m-1 flex max-h-[calc(100dvh-5rem)] flex-col gap-5 overflow-y-auto p-1">
       <div className="flex flex-col gap-1">
-        <h2 id="rule-title" className="text-[22px] font-bold tracking-[-0.02em]">{rule ? "Edit rule" : "New rule"}</h2>
+        <h2 id="rule-title" className="text-h3 font-bold tracking-[-0.02em]">{rule ? "Edit rule" : "New rule"}</h2>
         <p className="text-sm text-body">The first enabled rule that matches a task decides which account gets it.</p>
       </div>
       <label className="flex flex-col gap-1.5 text-sm font-bold">
@@ -75,8 +76,8 @@ export function RuleDialog({ rule, accounts, onClose, onSave, onDelete }: {
             className="min-h-9 cursor-pointer rounded-lg px-3 py-2 text-sm font-bold text-fail hover:bg-fail-soft disabled:opacity-40">Delete rule</button>
         ) : <span />}
         <div className="flex gap-2">
-          <button type="button" onClick={onClose} className="min-h-9 cursor-pointer rounded-lg border border-line px-4 py-2 text-sm font-bold hover:bg-surface">Cancel</button>
-          <button type="submit" disabled={busy || !name.trim()} className="min-h-9 cursor-pointer rounded-lg bg-cta px-4 py-2 text-sm font-bold text-on-cta disabled:cursor-not-allowed disabled:opacity-40">{busy ? "Saving" : "Save rule"}</button>
+          <button type="button" onClick={onClose} className={buttonCls("secondary", "md")}>Cancel</button>
+          <button type="submit" disabled={busy || !name.trim()} className={buttonCls("primary", "md")}>{busy ? "Saving" : "Save rule"}</button>
         </div>
       </div>
       </div>

@@ -28,12 +28,12 @@ export function Segmented<T extends string>({ value, onChange, options, label }:
     onChange(options[(i + d + options.length) % options.length].id);
   };
   return (
-    <div role="radiogroup" aria-label={label} onKeyDown={onKey} className="grid auto-cols-fr grid-flow-col gap-0.5 rounded-xl border border-line bg-surface p-1">
+    <div role="radiogroup" aria-label={label} onKeyDown={onKey} className="grid auto-cols-fr grid-flow-col gap-0.5 rounded-card border border-line bg-surface p-1">
       {options.map((o) => {
         const on = o.id === value;
         return (
           <button key={o.id} type="button" role="radio" aria-checked={on} tabIndex={on ? 0 : -1} onClick={() => onChange(o.id)}
-            className={`min-h-9 cursor-pointer rounded-lg px-3 py-1.5 text-[13px] font-bold ${on ? "border border-line bg-card text-ink" : "border border-transparent text-nav hover:text-ink"}`}>
+            className={`min-h-9 cursor-pointer rounded-lg px-3 py-1.5 text-meta font-bold ${on ? "border border-line bg-card text-ink" : "border border-transparent text-nav hover:text-ink"}`}>
             {o.label}
           </button>
         );
@@ -47,16 +47,35 @@ export function Modal({ titleId, onClose, onSubmit, children, width = 480 }: {
   titleId: string; onClose: () => void; onSubmit: (e: React.FormEvent) => void; children: ReactNode; width?: number;
 }) {
   const ref = useRef<HTMLFormElement>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
-    ref.current?.querySelector<HTMLElement>("[data-autofocus]")?.focus();
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const opener = document.activeElement as HTMLElement | null;
+    const root = ref.current;
+    (root?.querySelector<HTMLElement>("[data-autofocus]") ?? root)?.focus();
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { closeRef.current(); return; }
+      if (e.key !== "Tab" || !root) return;
+      // Keep Tab inside the dialog.
+      const f = Array.from(root.querySelectorAll<HTMLElement>('a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+      if (f.length === 0) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+      opener?.focus?.();
+    };
+  }, []);
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6" onMouseDown={onClose}>
-      <form ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={(e) => e.stopPropagation()} onSubmit={onSubmit}
-        style={{ maxWidth: width }} className="flex max-h-[calc(100dvh-24px)] w-full flex-col gap-5 overflow-y-auto rounded-t-2xl bg-card p-5 shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:rounded-2xl sm:p-6">
+      <form ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={(e) => e.stopPropagation()} onSubmit={onSubmit}
+        style={{ maxWidth: width }} className="flex max-h-[calc(100dvh-24px)] w-full flex-col gap-5 overflow-y-auto rounded-t-2xl bg-card p-5 shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:rounded-card sm:p-6">
         {children}
       </form>
     </div>

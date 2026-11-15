@@ -5,18 +5,25 @@ import { logoFor } from "./features/assets/logos";
 
 const TILE = 285;
 
-export function CrewAvatar({ provider, preset, size = 34, state }: { provider: Provider; preset?: string; size?: number; state?: State }) {
+const PROVIDER_INITIAL: Record<string, string> = { claude: "C", codex: "X", gemini: "G", api: "A" };
+
+/**
+ * Pixel crew portrait. The provider or account initial sits underneath, so the slot is never blank
+ * while the sprite loads or if it fails.
+ */
+export function CrewAvatar({ provider, preset, size = 34, state, name }: { provider: Provider; preset?: string; size?: number; state?: State; name?: string }) {
   const art = crewArtFor(provider, preset);
   const dim = state === "out" ? "grayscale(0.7) brightness(0.8)" : state === "low" ? "saturate(0.6)" : undefined;
-  const base = "shrink-0 rounded-[9px] bg-no-repeat";
-  if (art.kind === "image") {
-    return <div aria-hidden className={base} style={{ width: size, height: size, backgroundImage: `url(${art.src})`, backgroundSize: "cover", backgroundPosition: "center", filter: dim, imageRendering: "pixelated" }} />;
-  }
+  const initial = (name?.trim()[0] ?? PROVIDER_INITIAL[provider] ?? "?").toUpperCase();
   const s = size / TILE;
+  const sprite = art.kind === "image"
+    ? { backgroundImage: `url(${art.src})`, backgroundSize: "cover", backgroundPosition: "center" }
+    : { backgroundImage: "url(/crew.png)", backgroundSize: `${1776 * s}px ${592 * s}px`, backgroundPosition: `${-(7 + 296 * art.index) * s}px ${-125 * s}px` };
   return (
-    <div aria-hidden className={base}
-      style={{ width: size, height: size, backgroundImage: "url(/crew.png)", backgroundSize: `${1776 * s}px ${592 * s}px`,
-        backgroundPosition: `${-(7 + 296 * art.index) * s}px ${-125 * s}px`, filter: dim, imageRendering: "pixelated" }} />
+    <div aria-hidden className="relative shrink-0 overflow-hidden rounded-lg bg-track" style={{ width: size, height: size }}>
+      <span className="absolute inset-0 flex items-center justify-center font-bold text-body" style={{ fontSize: Math.round(size * 0.42) }}>{initial}</span>
+      <div className="absolute inset-0 bg-no-repeat" style={{ ...sprite, filter: dim, imageRendering: "pixelated" }} />
+    </div>
   );
 }
 
@@ -34,7 +41,7 @@ export function ProviderLogo({ provider, preset, size = 16 }: { provider: string
 export function Mark({ size = 26, light = false }: { size?: number; light?: boolean }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden className="text-ink">
-      <polygon points="14,7 46,7 40,21 8,21" fill={light ? "#fff" : "currentColor"} />
+      <polygon points="14,7 46,7 40,21 8,21" fill={light ? "var(--color-welcome-ink)" : "currentColor"} />
       <polygon points="8,27 40,27 34,41 2,41" fill="var(--color-shift)" />
     </svg>
   );

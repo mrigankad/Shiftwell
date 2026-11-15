@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Account } from "./api";
 import { CrewAvatar } from "./crew";
+import { buttonCls } from "./components/ui/Button";
 import { CheckBox, Segmented } from "./ui";
 
 export type StartInput = { profileId: string; repo: string; task: string } | { profileIds: string[]; repo: string; task: string };
@@ -50,13 +51,13 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
   const selected = many ? usable.filter((a) => picked.includes(a.id)) : usable.filter((a) => a.id === profileId);
   const missing = selected.filter((a) => a.provider === "api" && a.keyPresent === false);
   const ready = missing.length === 0 && (many ? picked.length >= 2 : !!profileId);
-  const input = "rounded-lg border border-line px-3 py-2.5 text-[15px] outline-none focus:border-action";
+  const input = "rounded-lg border border-line px-3 py-2.5 text-ui outline-none focus:border-action";
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-6" onMouseDown={onClose}>
       <form role="dialog" aria-modal="true" aria-labelledby="run-title" onMouseDown={(e) => e.stopPropagation()} onSubmit={submit}
-        className="flex max-h-[calc(100dvh-24px)] w-full max-w-[600px] flex-col gap-5 overflow-y-auto rounded-t-2xl bg-card p-5 shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:rounded-2xl sm:p-6">
+        className="flex max-h-[calc(100dvh-24px)] w-full max-w-[600px] flex-col gap-5 overflow-y-auto rounded-t-2xl bg-card p-5 shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:rounded-card sm:p-6">
         <div className="flex flex-col gap-1">
-          <h2 id="run-title" className="text-[22px] font-bold tracking-[-0.02em]">Start a run</h2>
+          <h2 id="run-title" className="text-h3 font-bold tracking-[-0.02em]">Start a run</h2>
           <p className="text-sm text-body">Shiftwell makes a fresh git worktree on its own branch and opens the account's CLI there with your task.</p>
         </div>
 
@@ -79,9 +80,9 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
                 const body = (
                   <>
                     {many && <CheckBox checked={on} onChange={() => toggle(a.id)} disabled={full} />}
-                    <CrewAvatar provider={a.provider} preset={a.api?.preset} size={32} state={a.usage.state} />
+                    <CrewAvatar provider={a.provider} preset={a.api?.preset} name={a.name} size={32} state={a.usage.state} />
                     <span className="flex flex-1 flex-col">
-                      <span className="text-[15px] font-bold">{a.name}</span>
+                      <span className="text-ui font-bold">{a.name}</span>
                       <span className="text-xs text-body">{roomText(a)}</span>
                     </span>
                     {a.provider === "api" && a.keyPresent === false && <span className="rounded-full bg-warn-soft px-2.5 py-0.5 text-xs font-bold text-warn">Key missing</span>}
@@ -117,8 +118,8 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
         {error && <p className="rounded-lg bg-fail-soft px-3 py-2 text-sm font-bold text-fail">{error}</p>}
 
         <div className="flex flex-wrap justify-end gap-2.5">
-          <button type="button" onClick={onClose} className="min-h-10 cursor-pointer rounded-lg border border-line px-4 py-2.5 text-sm font-bold hover:bg-surface">Cancel</button>
-          <button type="submit" disabled={busy || !ready || !repo.trim() || !task.trim()} className="min-h-10 cursor-pointer rounded-lg bg-action px-4 py-2.5 text-sm font-bold text-on-action disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="button" onClick={onClose} className={buttonCls("secondary", "md")}>Cancel</button>
+          <button type="submit" disabled={busy || !ready || !repo.trim() || !task.trim()} className={buttonCls("accent", "md")}>
             {busy ? "Starting..." : many ? (picked.length < 2 ? "Pick 2 or more" : `Start ${picked.length} runs`) : "Start run"}
           </button>
         </div>

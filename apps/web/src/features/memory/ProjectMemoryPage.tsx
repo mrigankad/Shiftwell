@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { PageHeader } from "../../components/ui/PageHeader";
+import { useToast } from "../../components/ui/Toast";
+import { buttonCls } from "../../components/ui/Button";
+import { Skeleton } from "../../components/states";
 import { memoryApi, type MemoryNote, type RepoEntry } from "./api";
 
 const baseName = (repo: string) => repo.replace(/[\\/]+$/, "").split(/[\\/]/).pop() || repo;
@@ -41,7 +45,7 @@ function RepoPicker({ value, repos, onPick }: { value: string; repos: RepoEntry[
 
   return (
     <div ref={root} className="relative w-full max-w-[520px]">
-      <label htmlFor={inputId} className="mb-1.5 block text-[13px] font-bold">Repository</label>
+      <label htmlFor={inputId} className="mb-1.5 block text-meta font-bold">Repository</label>
       <div className="flex items-center gap-2 rounded-lg border border-line bg-card px-3 focus-within:border-action focus-within:ring-2 focus-within:ring-action/30">
         <svg aria-hidden width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-muted"><path d="M4 5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2z M8 7h6" /></svg>
         <input id={inputId} role="combobox" aria-expanded={open} aria-controls={listId} aria-autocomplete="list"
@@ -57,7 +61,7 @@ function RepoPicker({ value, repos, onPick }: { value: string; repos: RepoEntry[
         </button>
       </div>
       {open && (
-        <ul id={listId} role="listbox" aria-label="Repositories" className="absolute left-0 right-0 top-full z-20 mt-1.5 max-h-64 overflow-auto rounded-xl border border-line bg-card p-1 shadow-xl">
+        <ul id={listId} role="listbox" aria-label="Repositories" className="absolute left-0 right-0 top-full z-20 mt-1.5 max-h-64 overflow-auto rounded-card border border-line bg-card p-1 shadow-xl">
           {options.length === 0 && <li role="presentation" className="px-3 py-2 text-sm text-body">No repositories yet. Paste a full path to add one.</li>}
           {options.map((o, i) => (
             <li key={o.repo} id={`${listId}-${i}`} role="option" aria-selected={o.repo === value}
@@ -108,12 +112,12 @@ function NoteCard({ note, busy, onPin, onSave, onDelete }: {
             <textarea id={fieldId} value={text} rows={3} maxLength={1000} onChange={(e) => setText(e.target.value)} className={fieldCls} />
             <div className="flex gap-2">
               <button type="button" disabled={busy || !text.trim()} onClick={async () => { if (await onSave(text)) setEditing(false); }}
-                className="min-h-9 cursor-pointer rounded-lg bg-cta px-3 py-1.5 text-[13px] font-bold text-on-cta hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">Save</button>
-              <button type="button" onClick={() => { setText(note.text); setEditing(false); }} className="min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Cancel</button>
+                className="min-h-9 cursor-pointer rounded-lg bg-cta px-3 py-1.5 text-meta font-bold text-on-cta hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">Save</button>
+              <button type="button" onClick={() => { setText(note.text); setEditing(false); }} className={buttonCls("secondary", "sm")}>Cancel</button>
             </div>
           </>
         ) : (
-          <p className="text-[15px] font-bold leading-[22px] [overflow-wrap:anywhere]">{note.text}</p>
+          <p className="text-ui font-bold leading-[22px] [overflow-wrap:anywhere]">{note.text}</p>
         )}
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
           {note.pinned && <span className="rounded-md bg-action-soft px-2 py-0.5 text-xs font-bold text-action">pinned</span>}
@@ -124,8 +128,8 @@ function NoteCard({ note, busy, onPin, onSave, onDelete }: {
       <div className="ml-[48px] flex shrink-0 items-start gap-0.5 sm:ml-0">
         {confirm ? (
           <div className="flex items-center gap-1.5">
-            <button type="button" onClick={onDelete} disabled={busy} className="cursor-pointer min-h-9 rounded-lg bg-fail px-2.5 py-1.5 text-[13px] font-bold text-on-action disabled:opacity-50">Delete</button>
-            <button type="button" onClick={() => setConfirm(false)} className="cursor-pointer min-h-9 rounded-lg border border-line px-2.5 py-1.5 text-[13px] font-bold hover:bg-surface">Keep</button>
+            <button type="button" onClick={onDelete} disabled={busy} className="cursor-pointer min-h-9 rounded-lg bg-fail px-2.5 py-1.5 text-meta font-bold text-on-action disabled:opacity-50">Delete</button>
+            <button type="button" onClick={() => setConfirm(false)} className="cursor-pointer min-h-9 rounded-lg border border-line px-2.5 py-1.5 text-meta font-bold hover:bg-surface">Keep</button>
           </div>
         ) : (
           <>
@@ -151,11 +155,10 @@ export function ProjectMemoryPage({ onToast, initialRepo }: { onToast?: (message
   const [draft, setDraft] = useState("");
   const [draftPinned, setDraftPinned] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const toast = useToast();
   const addId = useId();
 
-  const say = useCallback((m: string) => { setStatus(m); onToast?.(m); }, [onToast]);
-  useEffect(() => { if (!status) return; const t = setTimeout(() => setStatus(null), 4000); return () => clearTimeout(t); }, [status]);
+  const say = useCallback((m: string) => (onToast ?? toast.info)(m), [onToast, toast]);
 
   const loadRepos = useCallback(async () => {
     try {
@@ -189,32 +192,30 @@ export function ProjectMemoryPage({ onToast, initialRepo }: { onToast?: (message
   };
 
   return (
-    <div className="flex flex-col gap-5 px-4 py-5 sm:px-7 sm:py-[26px]">
-      <div className="flex flex-col gap-1">
-        <p className="text-sm text-body">Project memory{repo ? ` · ${baseName(repo)} · ${notes?.length ?? 0} ${notes?.length === 1 ? "note" : "notes"}` : ""} · read by every account before it starts</p>
-        <h1 className="text-[24px] font-bold leading-8 sm:text-[30px] sm:leading-9 tracking-[-0.03em]">What the crew has learned about this repo</h1>
-      </div>
+    <div className="flex flex-col gap-5">
+      <PageHeader eyebrow={`Project memory${repo ? ` · ${baseName(repo)} · ${notes?.length ?? 0} ${notes?.length === 1 ? "note" : "notes"}` : ""} · read by every account before it starts`}
+        title="What the crew has learned about this repo" />
 
       <RepoPicker value={repo} repos={repoList} onPick={setRepo} />
 
       <div className="flex flex-col items-stretch gap-5 lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-2.5">
           {repo && (
-            <form onSubmit={add} className="flex flex-col gap-2.5 rounded-xl border border-line p-[18px]">
-              <label htmlFor={addId} className="text-[13px] font-bold">Add a note</label>
+            <form onSubmit={add} className="flex flex-col gap-2.5 rounded-card border border-line p-[18px]">
+              <label htmlFor={addId} className="text-meta font-bold">Add a note</label>
               <textarea id={addId} value={draft} rows={2} maxLength={1000} onChange={(e) => setDraft(e.target.value)} className={fieldCls}
                 placeholder="Something a worker would otherwise learn the hard way" />
               <div className="flex items-center justify-between gap-3">
                 <button type="button" aria-pressed={draftPinned} onClick={() => setDraftPinned((p) => !p)}
-                  className={`flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[13px] font-bold ${draftPinned ? "border-action bg-action-soft text-action" : "border-line text-body hover:text-ink"}`}>
+                  className={`flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-meta font-bold ${draftPinned ? "border-action bg-action-soft text-action" : "border-line text-body hover:text-ink"}`}>
                   <PinIcon filled={draftPinned} /> Pin it
                 </button>
-                <button type="submit" disabled={busy || !draft.trim()} className="min-h-9 cursor-pointer rounded-lg bg-cta px-3.5 py-2 text-sm font-bold text-on-cta hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">Add note</button>
+                <button type="submit" disabled={busy || !draft.trim()} className={buttonCls("primary", "md")}>Add note</button>
               </div>
             </form>
           )}
           {!repo && <p className="rounded-xl border border-dashed border-line px-[18px] py-6 text-sm text-body">Start a run on a repository, or paste a path above, and its notes appear here.</p>}
-          {repo && notes === null && <p className="px-1 text-sm text-body">Loading notes.</p>}
+          {repo && notes === null && <Skeleton rows={3} label="Loading notes" />}
           {repo && notes?.length === 0 && <p className="rounded-xl border border-dashed border-line px-[18px] py-6 text-sm text-body">No notes for this repo yet. Notes you add, and a line from each handoff, are shown to every account at the start of a run.</p>}
           <ul className="flex flex-col gap-2.5" aria-label="Notes">
             {sorted.map((n) => (
@@ -226,18 +227,16 @@ export function ProjectMemoryPage({ onToast, initialRepo }: { onToast?: (message
           </ul>
         </div>
 
-        <aside className="flex w-full shrink-0 lg:w-[320px] flex-col gap-3.5 rounded-[14px] border border-line bg-surface p-5">
-          <p className="text-[13px] font-bold tracking-[0.06em] text-action">HOW IT REACHES THE WORKERS</p>
+        <aside className="flex w-full shrink-0 lg:w-[320px] flex-col gap-3.5 rounded-card border border-line bg-surface p-5">
+          <p className="text-meta font-bold tracking-[0.06em] text-action">HOW IT REACHES THE WORKERS</p>
           <p className="text-sm leading-5 text-body">Pinned notes come first, then the rest. The list is added to the end of HANDOFF.md, so Claude, Codex and Gemini all read it the same way.</p>
-          <ul className="flex flex-col gap-1.5 rounded-[10px] border border-line bg-card p-3 text-[13px] leading-[19px] text-nav">
+          <ul className="flex flex-col gap-1.5 rounded-control border border-line bg-card p-3 text-meta leading-[19px] text-nav">
             <li>Handoffs add one short line on their own</li>
             <li>Edit or delete any line at any time</li>
             <li>Notes stay on this machine, one file per repo</li>
           </ul>
         </aside>
       </div>
-
-      {status && <div role="status" className="fixed bottom-6 left-4 right-4 z-40 rounded-xl sm:left-auto sm:right-6 bg-cta px-4 py-3 text-sm font-bold text-on-cta shadow-xl">{status}</div>}
     </div>
   );
 }

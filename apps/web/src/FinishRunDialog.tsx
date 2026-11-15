@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Run } from "./api";
+import { buttonCls } from "./components/ui/Button";
 import { CheckBox, Modal } from "./ui";
 
 export function FinishRunDialog({ run, onClose, onFinish }: {
@@ -17,7 +18,7 @@ export function FinishRunDialog({ run, onClose, onFinish }: {
   return (
     <Modal titleId="finish-title" onClose={onClose} onSubmit={submit} width={460}>
       <div className="flex flex-col gap-1">
-        <h2 id="finish-title" className="text-[22px] font-bold tracking-[-0.02em]">Mark run done</h2>
+        <h2 id="finish-title" className="text-h3 font-bold tracking-[-0.02em]">Mark run done</h2>
         <p className="truncate text-sm text-body">{run.task}</p>
         <span className="text-xs text-muted">Branch {run.branch}</span>
       </div>
@@ -30,8 +31,8 @@ export function FinishRunDialog({ run, onClose, onFinish }: {
       </div>
       {error && <p role="alert" className="rounded-lg bg-fail-soft px-3 py-2 text-sm font-bold text-fail">{error}</p>}
       <div className="flex flex-wrap justify-end gap-2.5">
-        <button type="button" onClick={onClose} className="min-h-10 cursor-pointer rounded-lg border border-line px-4 py-2.5 text-sm font-bold hover:bg-surface">Cancel</button>
-        <button type="submit" data-autofocus disabled={busy} className="min-h-10 cursor-pointer rounded-lg bg-action px-4 py-2.5 text-sm font-bold text-on-action disabled:cursor-not-allowed disabled:opacity-50">
+        <button type="button" onClick={onClose} className={buttonCls("secondary", "md")}>Cancel</button>
+        <button type="submit" data-autofocus disabled={busy} className={buttonCls("accent", "md")}>
           {busy ? "Finishing..." : "Mark done"}
         </button>
       </div>

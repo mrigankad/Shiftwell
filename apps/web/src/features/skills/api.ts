@@ -1,3 +1,5 @@
+import { request } from "../../lib/http";
+
 export type SkillProvider = "claude" | "codex" | "gemini" | "api";
 
 export interface Skill {
@@ -10,14 +12,7 @@ export interface Skill {
 }
 export type SkillInput = Omit<Skill, "id">;
 
-async function json<T>(res: Response): Promise<T> {
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((body as { error?: string }).error ?? `Request failed (${res.status})`);
-  return body as T;
-}
-
-const send = <T>(method: string, url: string, body?: unknown) =>
-  fetch(url, { method, headers: body === undefined ? undefined : { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) }).then(json<T>);
+const send = <T>(method: string, url: string, body?: unknown) => request<T>(method, url, body);
 
 export const skillsApi = {
   list: () => send<Skill[]>("GET", "/api/skills"),

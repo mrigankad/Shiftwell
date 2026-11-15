@@ -56,7 +56,7 @@ export function buildCommands(ctx: CommandContext): Command[] {
       hint: [a.plan, a.usage.state === "unknown" ? undefined : a.usage.state].filter(Boolean).join(", ") || a.provider,
       group: "Accounts",
       run: () => (ctx.openAccount ? ctx.openAccount(a) : ctx.go("accounts")),
-      icon: <CrewAvatar provider={a.provider} preset={a.api?.preset} size={28} state={a.usage.state} />,
+      icon: <CrewAvatar provider={a.provider} preset={a.api?.preset} name={a.name} size={28} state={a.usage.state} />,
     });
   }
   return out;

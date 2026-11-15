@@ -1,3 +1,5 @@
+import { request } from "../../lib/http";
+
 export interface MemoryNote {
   id: string;
   text: string;
@@ -8,14 +10,7 @@ export interface MemoryNote {
 export interface RepoMemory { repo: string; notes: MemoryNote[] }
 export interface RepoEntry { repo: string; notes: number }
 
-async function json<T>(res: Response): Promise<T> {
-  const body = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((body as { error?: string }).error ?? `Request failed (${res.status})`);
-  return body as T;
-}
-
-const send = <T>(method: string, url: string, body?: unknown) =>
-  fetch(url, { method, headers: body === undefined ? undefined : { "Content-Type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) }).then(json<T>);
+const send = <T>(method: string, url: string, body?: unknown) => request<T>(method, url, body);
 
 const q = (repo: string) => `repo=${encodeURIComponent(repo)}`;
 

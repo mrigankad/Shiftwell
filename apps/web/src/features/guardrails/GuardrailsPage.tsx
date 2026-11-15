@@ -4,6 +4,9 @@ import { CrewAvatar } from "../../crew";
 import { CheckBox } from "../../ui";
 import { EmptyState, PageTitle } from "../../pages/shared";
 import { guardrailsApi, type Guardrails, type StartCheck } from "./api";
+import { buttonCls } from "../../components/ui/Button";
+import { Skeleton } from "../../components/states";
+import { ErrorState } from "../../components/states";
 import { Stepper, Switch, TimeRange } from "./controls";
 
 const DEFAULT_QUIET = { start: "22:00", end: "07:00" };
@@ -12,9 +15,9 @@ function Row({ title, hint, risk, control }: { title: string; hint: string; risk
   return (
     <div className="flex flex-col gap-3 border-b border-row py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
       <div className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-[16px] font-bold">{title}</span>
+        <span className="text-base font-bold">{title}</span>
         <span className="text-sm leading-6 text-body">{hint}</span>
-        {risk && <span className="text-[13px] font-bold text-warn">{risk}</span>}
+        {risk && <span className="text-meta font-bold text-warn">{risk}</span>}
       </div>
       <div className="shrink-0 self-start sm:self-auto">{control}</div>
     </div>
@@ -33,13 +36,13 @@ function BlockedPaths({ paths, onChange }: { paths: string[]; onChange: (p: stri
   return (
     <div className="flex flex-col gap-3 py-4">
       <div className="flex flex-col gap-0.5">
-        <label htmlFor={id} className="text-[16px] font-bold">Paths to leave alone</label>
+        <label htmlFor={id} className="text-base font-bold">Paths to leave alone</label>
         <span className="text-sm leading-6 text-body">Patterns like .env* or infra/**. They are added to every HANDOFF.md as a reminder for the next agent.</span>
       </div>
       <div className="flex gap-2">
         <input id={id} value={text} onChange={(e) => setText(e.target.value)} placeholder="secrets/**"
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
-          className="min-w-0 flex-1 rounded-lg border border-line bg-card px-3 py-2.5 text-[15px] outline-none focus:border-action" />
+          className="min-w-0 flex-1 rounded-lg border border-line bg-card px-3 py-2.5 text-ui outline-none focus:border-action" />
         <button type="button" onClick={add} disabled={!text.trim()}
           className="shrink-0 cursor-pointer rounded-lg bg-cta px-4 py-2.5 text-sm font-bold text-on-cta disabled:cursor-not-allowed disabled:opacity-40">Add</button>
       </div>
@@ -70,14 +73,14 @@ function StartTester({ accounts }: { accounts: Account[] }) {
     try { setResult(await guardrailsApi.check(picked)); } catch (e) { setError((e as Error).message); }
   };
   return (
-    <section aria-labelledby="gt-title" className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-5">
-      <h2 id="gt-title" className="text-[18px] font-bold">Check a start</h2>
+    <section aria-labelledby="gt-title" className="flex flex-col gap-3 rounded-card border border-line bg-card p-5">
+      <h2 id="gt-title" className="text-lg font-bold">Check a start</h2>
       <p className="text-sm leading-6 text-body">Pick accounts and see whether a run would be allowed right now. Saved guardrails apply.</p>
       <div className="flex flex-col gap-1">
         {accounts.map((a) => (
           <label key={a.id} className="flex min-h-9 cursor-pointer items-center gap-2.5 rounded-lg px-1 py-1.5">
             <CheckBox checked={picked.includes(a.id)} onChange={() => toggle(a.id)} />
-            <CrewAvatar provider={a.provider} preset={a.api?.preset} size={24} state={a.usage.state} />
+            <CrewAvatar provider={a.provider} preset={a.api?.preset} name={a.name} size={24} state={a.usage.state} />
             <span className="min-w-0 break-words text-sm font-bold">{a.name}</span>
           </label>
         ))}
@@ -113,7 +116,7 @@ export function GuardrailsPage({ accounts }: { accounts: Account[] }) {
     return (
       <div className="flex flex-col gap-6">
         <PageTitle title="Guardrails" eyebrow="Safety" />
-        {error ? <EmptyState title="Could not load guardrails" body={error} /> : <p role="status" className="text-sm text-muted">Loading</p>}
+        {error ? <ErrorState title="Could not load guardrails" body={error} /> : <Skeleton rows={4} label="Loading guardrails" />}
       </div>
     );
   }
@@ -135,12 +138,12 @@ export function GuardrailsPage({ accounts }: { accounts: Account[] }) {
           <button type="button" disabled={!dirty || busy} onClick={() => { setDraft(saved); setError(null); }}
             className="min-h-9 cursor-pointer rounded-lg border border-line px-3.5 py-2 text-sm font-bold hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40">Discard</button>
           <button type="button" disabled={!dirty || busy} onClick={save}
-            className="min-h-9 cursor-pointer rounded-lg bg-cta px-4 py-2 text-sm font-bold text-on-cta disabled:cursor-not-allowed disabled:opacity-40">{busy ? "Saving" : "Save changes"}</button>
+            className={buttonCls("primary", "md")}>{busy ? "Saving" : "Save changes"}</button>
         </div>
       </PageTitle>
       <div aria-live="polite">{error && <p role="alert" className="rounded-lg bg-fail-soft px-3 py-2 text-sm font-bold text-fail">{error}</p>}</div>
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <section aria-labelledby="g-title" className="flex flex-col rounded-2xl border border-line bg-card px-4 py-2 sm:px-6">
+        <section aria-labelledby="g-title" className="flex flex-col rounded-card border border-line bg-card px-4 py-2 sm:px-6">
           <h2 id="g-title" className="sr-only">Guardrails</h2>
           <Row title="Automatic rotation" hint={`Hand off without asking when an account passes ${draft.stopAtPct}%.`}
             risk={draft.autoRotate ? "Risk: vendors may read this as limit evasion." : undefined}

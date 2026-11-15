@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, type ApiConfig, type CreateProfileInput, type Preset, type Provider } from "./api";
+import { buttonCls } from "./components/ui/Button";
 import { CrewAvatar } from "./crew";
 
 const OPTIONS: { id: Provider; title: string; hint: string }[] = [
@@ -66,10 +67,10 @@ export function AddAccountDialog({ onClose, onCreate }: {
         aria-labelledby="add-title"
         onMouseDown={(e) => e.stopPropagation()}
         onSubmit={submit}
-        className="flex max-h-[calc(100dvh-24px)] w-full max-w-[560px] flex-col gap-5 overflow-y-auto rounded-t-2xl bg-card p-5 shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:rounded-2xl sm:p-6"
+        className="flex max-h-[calc(100dvh-24px)] w-full max-w-[560px] flex-col gap-5 overflow-y-auto rounded-t-2xl bg-card p-5 shadow-2xl sm:max-h-[calc(100dvh-48px)] sm:rounded-card sm:p-6"
       >
         <div className="flex flex-col gap-1">
-          <h2 id="add-title" className="text-[22px] font-bold tracking-[-0.02em]">Add an account</h2>
+          <h2 id="add-title" className="text-h3 font-bold tracking-[-0.02em]">Add an account</h2>
           <p className="text-sm text-body">Shiftwell makes a separate folder for it. You sign in with the vendor's own login next.</p>
         </div>
 
@@ -87,7 +88,7 @@ export function AddAccountDialog({ onClose, onCreate }: {
               >
                 <CrewAvatar provider={o.id} size={36} />
                 <span className="flex flex-col">
-                  <span className="text-[15px] font-bold">{o.title}</span>
+                  <span className="text-ui font-bold">{o.title}</span>
                   <span className="text-xs text-body">{o.hint}</span>
                 </span>
               </button>
@@ -96,10 +97,10 @@ export function AddAccountDialog({ onClose, onCreate }: {
         </div>
 
         {isApi && (
-          <div className="flex flex-col gap-4 rounded-xl border border-line bg-surface p-4">
+          <div className="flex flex-col gap-4 rounded-card border border-line bg-surface p-4">
             <div className="flex flex-col gap-2">
               <span className="text-sm font-bold">Provider</span>
-              {presets === null ? <p className="text-sm text-body">Loading providers...</p>
+              {presets === null ? <p role="status" className="text-sm text-body">Loading providers</p>
                 : presets === "error" ? <p className="text-sm font-bold text-fail">Could not load the provider list. Is the Shiftwell service running?</p>
                 : (
                   <div role="radiogroup" aria-label="API provider" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -108,8 +109,8 @@ export function AddAccountDialog({ onClose, onCreate }: {
                       return (
                         <button type="button" role="radio" aria-checked={on} key={p.id} onClick={() => pick(p)}
                           className={`flex cursor-pointer items-center gap-2 rounded-xl p-2.5 text-left ${on ? "border-2 border-action bg-pick" : "border border-line bg-card hover:bg-surface"}`}>
-                          <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-full bg-action-soft text-[11px] font-bold text-action">{initials(p.label)}</span>
-                          <span className="min-w-0 truncate text-[13px] font-bold">{p.label}</span>
+                          <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-full bg-action-soft text-2xs font-bold text-action">{initials(p.label)}</span>
+                          <span className="min-w-0 truncate text-meta font-bold">{p.label}</span>
                         </button>
                       );
                     })}
@@ -121,13 +122,13 @@ export function AddAccountDialog({ onClose, onCreate }: {
               <>
                 <label className="flex flex-col gap-1.5">
                   <span className="text-sm font-bold">Model</span>
-                  <input value={model} onChange={(e) => setModel(e.target.value)} spellCheck={false} className="rounded-lg border border-line bg-card px-3 py-2.5 text-[15px] outline-none focus:border-action" />
+                  <input value={model} onChange={(e) => setModel(e.target.value)} spellCheck={false} className="rounded-lg border border-line bg-card px-3 py-2.5 text-ui outline-none focus:border-action" />
                 </label>
 
                 {custom ? (
                   <label className="flex flex-col gap-1.5">
                     <span className="text-sm font-bold">Base URL</span>
-                    <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://api.example.com/v1" spellCheck={false} aria-invalid={!!urlErr} className="rounded-lg border border-line bg-card px-3 py-2.5 text-[15px] outline-none focus:border-action" />
+                    <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="https://api.example.com/v1" spellCheck={false} aria-invalid={!!urlErr} className="rounded-lg border border-line bg-card px-3 py-2.5 text-ui outline-none focus:border-action" />
                     {urlErr && <span className="text-xs font-bold text-fail">{urlErr}</span>}
                   </label>
                 ) : (
@@ -139,7 +140,7 @@ export function AddAccountDialog({ onClose, onCreate }: {
 
                 <label className="flex flex-col gap-1.5">
                   <span className="text-sm font-bold">Key variable name</span>
-                  <input value={keyEnv} onChange={(e) => setKeyEnv(e.target.value)} spellCheck={false} aria-invalid={!!keyErr} className="rounded-lg border border-line bg-card px-3 py-2.5 text-[15px] outline-none focus:border-action" />
+                  <input value={keyEnv} onChange={(e) => setKeyEnv(e.target.value)} spellCheck={false} aria-invalid={!!keyErr} className="rounded-lg border border-line bg-card px-3 py-2.5 text-ui outline-none focus:border-action" />
                   {keyErr && <span className="text-xs font-bold text-fail">{keyErr}</span>}
                 </label>
 
@@ -147,7 +148,7 @@ export function AddAccountDialog({ onClose, onCreate }: {
                   <p className="text-sm leading-6 text-body">Shiftwell never sees or stores your key. Set it as an environment variable, then restart Shiftwell.</p>
                   <Command label="Windows PowerShell" text={`setx ${keyEnv || "NAME"} "your-key"`} />
                   <Command label="macOS or Linux" text={`export ${keyEnv || "NAME"}="your-key"`} />
-                  <p className="rounded-lg bg-warn-soft px-3 py-2 text-[13px] leading-5 text-warn">
+                  <p className="rounded-lg bg-warn-soft px-3 py-2 text-meta leading-5 text-warn">
                     Runs use the Codex CLI, which only talks to providers that support the OpenAI Responses API. Test connection checks the key, not this.
                   </p>
                 </div>
@@ -158,18 +159,18 @@ export function AddAccountDialog({ onClose, onCreate }: {
 
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-bold">Name</span>
-          <input ref={nameRef} value={name} onChange={(e) => setName(e.target.value)} placeholder="Claude A, personal Max" className="rounded-lg border border-line px-3 py-2.5 text-[15px] outline-none focus:border-action" />
+          <input ref={nameRef} value={name} onChange={(e) => setName(e.target.value)} placeholder="Claude A, personal Max" className="rounded-lg border border-line px-3 py-2.5 text-ui outline-none focus:border-action" />
         </label>
         <label className="flex flex-col gap-1.5">
           <span className="text-sm font-bold">Plan <span className="font-normal text-muted">(optional)</span></span>
-          <input value={plan} onChange={(e) => setPlan(e.target.value)} placeholder="Max 20x" className="rounded-lg border border-line px-3 py-2.5 text-[15px] outline-none focus:border-action" />
+          <input value={plan} onChange={(e) => setPlan(e.target.value)} placeholder="Max 20x" className="rounded-lg border border-line px-3 py-2.5 text-ui outline-none focus:border-action" />
         </label>
 
         {error && <p className="rounded-lg bg-fail-soft px-3 py-2 text-sm font-bold text-fail">{error}</p>}
 
         <div className="flex flex-wrap justify-end gap-2.5">
-          <button type="button" onClick={onClose} className="min-h-10 cursor-pointer rounded-lg border border-line px-4 py-2.5 text-sm font-bold hover:bg-surface">Cancel</button>
-          <button type="submit" disabled={busy || !name.trim() || (isApi && !apiReady)} className="min-h-10 cursor-pointer rounded-lg bg-action px-4 py-2.5 text-sm font-bold text-on-action disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="button" onClick={onClose} className={buttonCls("secondary", "md")}>Cancel</button>
+          <button type="submit" disabled={busy || !name.trim() || (isApi && !apiReady)} className={buttonCls("accent", "md")}>
             {busy ? "Adding…" : "Add account"}
           </button>
         </div>
@@ -196,7 +197,7 @@ function Command({ label, text }: { label: string; text: string }) {
     <div className="flex flex-col gap-1">
       <span className="text-xs text-muted">{label}</span>
       <div className="flex items-center gap-2 rounded-lg border border-line bg-card px-3 py-2">
-        <span className="min-w-0 flex-1 select-text break-all text-[13px] text-ink">{text}</span>
+        <span className="min-w-0 flex-1 select-text break-all text-meta text-ink">{text}</span>
         <button type="button" onClick={copy} className="min-h-9 shrink-0 cursor-pointer rounded-md border border-line px-3 py-1 text-xs font-bold hover:bg-surface">{copied ? "Copied" : "Copy"}</button>
       </div>
     </div>

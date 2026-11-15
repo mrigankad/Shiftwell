@@ -54,28 +54,28 @@ export function Onboarding({ accountsCount, onAddAccount, onClose }: {
   };
 
   const s = STEPS[step];
-  const primary = "cursor-pointer min-h-11 rounded-xl bg-cta px-5 py-3 text-[15px] font-bold text-on-cta hover:opacity-90";
-  const secondary = "cursor-pointer min-h-11 rounded-xl border border-line bg-card px-4 py-3 text-[15px] font-bold hover:bg-surface";
+  const primary = "cursor-pointer min-h-11 rounded-xl bg-cta px-5 py-3 text-ui font-bold text-on-cta hover:opacity-90";
+  const secondary = "cursor-pointer min-h-11 rounded-card border border-line bg-card px-4 py-3 text-ui font-bold hover:bg-surface";
 
   return (
     <div ref={root} role="dialog" aria-modal="true" aria-labelledby="onb-title" onKeyDown={onKey}
       className="fixed inset-0 z-40 flex flex-col overflow-y-auto bg-page lg:flex-row lg:gap-4 lg:overflow-hidden lg:p-4">
       <section className="flex flex-1 flex-col px-5 py-6 sm:px-8 sm:py-8 lg:px-16 lg:py-10">
-        <div className="flex items-center gap-2.5"><Mark /><span className="text-[21px] font-bold tracking-[-0.04em]">shiftwell</span></div>
+        <div className="flex items-center gap-2.5"><Mark /><span className="text-xl font-bold tracking-[-0.04em]">shiftwell</span></div>
 
         <div className="flex flex-1 flex-col justify-center gap-4 py-6 sm:py-10 lg:max-w-[540px]">
-          <span className="text-[13px] font-bold tracking-[0.06em] text-action">{`STEP ${step + 1} OF ${STEPS.length} · ${s.eyebrow}`}</span>
-          <h1 id="onb-title" className="text-[34px] font-bold leading-[1.05] sm:text-[44px] tracking-[-0.04em]">{s.title}</h1>
-          {s.body && <p className="text-base leading-7 text-body sm:text-[17px]">{s.body}</p>}
+          <span className="text-meta font-bold tracking-[0.06em] text-action">{`STEP ${step + 1} OF ${STEPS.length} · ${s.eyebrow}`}</span>
+          <h1 id="onb-title" className="text-4xl font-bold leading-[1.05] sm:text-display tracking-[-0.04em]">{s.title}</h1>
+          {s.body && <p className="text-base leading-7 text-body sm:text-title">{s.body}</p>}
 
           {step === 1 && (
             <ul className="flex flex-col gap-3 pt-2">
               {PROMISES.map((p) => (
-                <li key={p.title} className="flex items-start gap-3.5 rounded-xl border border-line bg-card p-4">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-action-soft text-action">
+                <li key={p.title} className="flex items-start gap-3.5 rounded-card border border-line bg-card p-4">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-control bg-action-soft text-action">
                     <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{p.icon}</svg>
                   </span>
-                  <span className="flex flex-col"><span className="text-[15px] font-bold">{p.title}</span><span className="text-sm leading-6 text-body">{p.body}</span></span>
+                  <span className="flex flex-col"><span className="text-ui font-bold">{p.title}</span><span className="text-sm leading-6 text-body">{p.body}</span></span>
                 </li>
               ))}
             </ul>
@@ -84,7 +84,7 @@ export function Onboarding({ accountsCount, onAddAccount, onClose }: {
           {step === 2 && (
             <div className="flex flex-col gap-3 pt-2">
               <button type="button" data-autofocus onClick={onAddAccount} className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-action-line bg-pick p-4 text-left">
-                <span className="flex flex-col"><span className="text-[15px] font-bold">Add an account</span><span className="text-sm text-body">Claude Code, Codex, Gemini or an API key</span></span>
+                <span className="flex flex-col"><span className="text-ui font-bold">Add an account</span><span className="text-sm text-body">Claude Code, Codex, Gemini or an API key</span></span>
                 <span aria-hidden className="text-sm font-bold text-action">Add</span>
               </button>
               {added && <p role="status" className="text-sm font-bold text-pass">Account added.</p>}
@@ -112,8 +112,8 @@ export function Onboarding({ accountsCount, onAddAccount, onClose }: {
 
       <aside className="relative min-h-[260px] flex-1 sm:min-h-[320px] overflow-hidden lg:rounded-[28px]">
         <img src="/welcome.png" alt="" className="absolute inset-0 size-full object-cover" style={{ imageRendering: "pixelated" }} />
-        <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 flex max-w-[340px] flex-col gap-1 rounded-2xl border border-line bg-card p-4 shadow-xl">
-          <span className="text-[13px] font-bold text-pass">{s.caption[0]}</span>
+        <div className="absolute bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-6 flex max-w-[340px] flex-col gap-1 rounded-card border border-line bg-card p-4 shadow-xl">
+          <span className="text-meta font-bold text-pass">{s.caption[0]}</span>
           <span className="text-sm leading-5 text-ink">{s.caption[1]}</span>
         </div>
       </aside>

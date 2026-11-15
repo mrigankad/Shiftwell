@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState, type ReactNode } from "react";
 import { api, type Run } from "../api";
 import { CrewAvatar } from "../crew";
+import { buttonCls } from "../components/ui/Button";
 import { EmptyState, PageTitle, ago, type PageCtx } from "./shared";
 
 function inline(text: string): ReactNode[] {
@@ -24,13 +25,13 @@ function Note({ md }: { md: string }) {
       const code: string[] = [];
       i++;
       while (i < lines.length && !lines[i].trim().startsWith("```")) code.push(lines[i++]);
-      out.push(<pre key={out.length} className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-line bg-surface px-3 py-2.5 font-sans text-[13px] leading-5 text-ink">{code.join("\n")}</pre>);
+      out.push(<pre key={out.length} className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-line bg-surface px-3 py-2.5 font-sans text-meta leading-5 text-ink">{code.join("\n")}</pre>);
       continue;
     }
     const h = /^(#{1,6})\s+(.*)$/.exec(l);
     if (h) {
       flush();
-      out.push(<h3 key={out.length} className={`pt-1 font-bold tracking-[-0.01em] text-ink ${h[1].length <= 1 ? "text-lg" : "text-[15px]"}`}>{inline(h[2])}</h3>);
+      out.push(<h3 key={out.length} className={`pt-1 font-bold tracking-[-0.01em] text-ink ${h[1].length <= 1 ? "text-lg" : "text-ui"}`}>{inline(h[2])}</h3>);
     } else if (l.trim() === "") flush();
     else para.push(l.trim());
   }
@@ -63,14 +64,14 @@ export function HandoffsPage({ ctx }: { ctx: PageCtx }) {
   const fromRun = (r: Run) => ctx.runs.find((x) => x.id === r.fromRunId);
 
   return (
-    <div className="flex flex-col gap-5 px-4 py-5 sm:px-7 sm:py-6">
+    <div className="flex flex-col gap-5">
       <PageTitle title="Handoffs" eyebrow={`${list.length} ${list.length === 1 ? "handoff" : "handoffs"}, newest first`} />
       {list.length === 0 ? (
         <EmptyState title="No handoffs yet"
           body="A handoff moves a run from an account that is running low to another one. The next account opens in the same worktree and reads a HANDOFF.md note with the task, the changes so far and what is left. Hand off from any active run and it will appear here." />
       ) : (
         <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <div role="listbox" aria-label="Handoffs" className="overflow-hidden rounded-xl border border-line">
+          <div role="listbox" aria-label="Handoffs" className="overflow-hidden rounded-card border border-line">
             {list.map((r) => {
               const from = fromRun(r);
               const on = r.id === selected;
@@ -86,21 +87,21 @@ export function HandoffsPage({ ctx }: { ctx: PageCtx }) {
                     <span className="hidden flex-1 sm:block" />
                     <span className="shrink-0 text-xs text-muted">{ago(r.startedAt)}</span>
                   </span>
-                  <span className="truncate text-[15px]">{r.task}</span>
+                  <span className="truncate text-ui">{r.task}</span>
                 </button>
               );
             })}
           </div>
 
-          <div className="min-h-[160px] min-w-0 rounded-xl border border-line bg-card p-4 sm:p-5 lg:min-h-[240px]" aria-live="polite">
+          <div className="min-h-[160px] min-w-0 rounded-card border border-line bg-card p-4 sm:p-5 lg:min-h-[240px]" aria-live="polite">
             {!sel || !note ? (
               <p className="text-sm text-body">Select a handoff to read its note.</p>
             ) : note.status === "loading" ? (
-              <p className="text-sm text-body">Loading note...</p>
+              <p role="status" className="text-sm text-body">Loading the note</p>
             ) : note.status === "error" ? (
               <div className="flex flex-col items-start gap-3">
                 <p className="rounded-lg bg-fail-soft px-3 py-2 text-sm font-bold text-fail">{note.message}</p>
-                <button onClick={() => setAttempt((n) => n + 1)} className="min-h-9 cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[13px] font-bold hover:bg-surface">Try again</button>
+                <button onClick={() => setAttempt((n) => n + 1)} className={buttonCls("secondary", "sm")}>Try again</button>
               </div>
             ) : note.note.trim() ? (
               <Note md={note.note} />

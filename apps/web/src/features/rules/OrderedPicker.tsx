@@ -25,9 +25,9 @@ export function OrderedPicker({ accounts, value, onChange, label }: { accounts: 
       ) : (
         <ol className="flex flex-col gap-1.5">
           {chosen.map((a, i) => (
-            <li key={a.id} className="flex items-center gap-2.5 rounded-xl border border-line bg-card py-1.5 pl-3 pr-1.5">
-              <span aria-hidden className="w-4 text-[13px] font-bold text-muted">{i + 1}</span>
-              <CrewAvatar provider={a.provider} preset={a.api?.preset} size={26} state={a.usage.state} />
+            <li key={a.id} className="flex items-center gap-2.5 rounded-card border border-line bg-card py-1.5 pl-3 pr-1.5">
+              <span aria-hidden className="w-4 text-meta font-bold text-muted">{i + 1}</span>
+              <CrewAvatar provider={a.provider} preset={a.api?.preset} name={a.name} size={26} state={a.usage.state} />
               <span className="min-w-0 flex-1 truncate text-sm font-bold">{a.name}</span>
               <button type="button" aria-label={`Move ${a.name} up`} disabled={i === 0} onClick={() => move(i, -1)} className={icon}>
                 <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M2.5 7.5L6 4l3.5 3.5" /></svg>
@@ -46,8 +46,8 @@ export function OrderedPicker({ accounts, value, onChange, label }: { accounts: 
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Accounts you can add">
           {rest.map((a) => (
             <button key={a.id} type="button" onClick={() => onChange([...value, a.id])}
-              className="flex cursor-pointer items-center gap-2 min-h-9 rounded-full border border-dashed border-line py-1 pl-1.5 pr-3 text-[13px] font-bold text-body hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-action">
-              <CrewAvatar provider={a.provider} preset={a.api?.preset} size={20} state={a.usage.state} />
+              className="flex cursor-pointer items-center gap-2 min-h-9 rounded-full border border-dashed border-line py-1 pl-1.5 pr-3 text-meta font-bold text-body hover:bg-surface hover:text-ink focus-visible:outline-2 focus-visible:outline-action">
+              <CrewAvatar provider={a.provider} preset={a.api?.preset} name={a.name} size={20} state={a.usage.state} />
               Add {a.name}
             </button>
           ))}

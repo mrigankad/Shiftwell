@@ -1,11 +1,17 @@
 import { fmtHours, SAVED_HOURS_PER_HANDOFF } from "../usage/metrics";
 import { headline, plural, type Recap } from "./summary";
 
-/** Card colours are fixed night values from the design, on purpose: the PNG must look the same everywhere. */
-const C = {
-  card: "#1E2130", tile: "#272B3D", white: "#FFFFFF", muted: "#9AA0B4", soft: "#C9CCD6", accent: "#FF8A5B", shift: "#FF5A1F",
-  worker: "rgba(255,138,91,0.12)",
+/** Card colours come from the fixed welcome tokens in index.css, so the PNG looks the same in both themes. */
+const token = (name: string, fallback: string) => {
+  try { return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback; } catch { return fallback; }
 };
+const alpha = (hex: string, a: number) => (/^#[0-9a-f]{6}$/i.test(hex) ? `${hex}${Math.round(a * 255).toString(16).padStart(2, "0")}` : hex);
+const palette = () => ({
+  card: token("--color-welcome-card", "black"), tile: token("--color-welcome-tile", "black"), white: token("--color-welcome-ink", "white"),
+  muted: token("--color-welcome-muted", "gray"), soft: token("--color-welcome-body", "silver"), accent: token("--color-welcome-accent", "orange"),
+  shift: token("--color-shift", "orangered"), hero: token("--color-welcome", "black"),
+  worker: alpha(token("--color-welcome-accent", "orange"), 0.12),
+});
 const FONT = '"Plus Jakarta Sans Variable", "Plus Jakarta Sans", system-ui, sans-serif';
 export const CARD_W = 560;
 export const CARD_H = 640;
@@ -47,6 +53,7 @@ function wrap(ctx: CanvasRenderingContext2D, segs: Seg[], maxW: number): Seg[][]
 }
 
 export async function renderRecapCard(r: Recap, crewSrc = "/crew.png"): Promise<HTMLCanvasElement> {
+  const C = palette();
   try { await Promise.all([document.fonts.load(`700 36px ${FONT}`), document.fonts.load(`400 13px ${FONT}`)]); } catch { /* fall back to system font */ }
   const crew = await loadImage(crewSrc).catch(() => null);
 
@@ -63,7 +70,7 @@ export async function renderRecapCard(r: Recap, crewSrc = "/crew.png"): Promise<
   ctx.fillStyle = C.card; ctx.fillRect(0, 0, CARD_W, CARD_H);
 
   // Hero: the pixel crew, cover-fitted and centred, drawn without smoothing to keep the pixels crisp.
-  ctx.fillStyle = "#14161E"; ctx.fillRect(0, 0, CARD_W, HERO_H);
+  ctx.fillStyle = C.hero; ctx.fillRect(0, 0, CARD_W, HERO_H);
   if (crew) {
     const s = Math.max(CARD_W / crew.width, HERO_H / crew.height);
     const dw = crew.width * s, dh = crew.height * s;
