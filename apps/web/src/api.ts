@@ -36,6 +36,17 @@ export interface GroupRun extends Run { changes: { commits: number; files: numbe
 export interface RunGroup { groupId: string; task: string; runs: GroupRun[] }
 export interface Board { generatedAt: string; accounts: Account[]; runs: Run[]; suggestions: Suggestion[] }
 
+export interface InsightAccount {
+  id: string; name: string; provider: Provider; preset?: string;
+  readingsLast7d: number; peakLast7d: number | null; avgDailyPeak: number | null; hoursAtLimitLast7d: number;
+  /** [Mon..Sun][hour 0..23] max usage percent, null when no reading landed in that slot. */
+  heat: (number | null)[][];
+}
+export interface Insights {
+  generatedAt: string; accounts: InsightAccount[];
+  crewHeadroomNow: number | null; bestNext: { id: string; name: string; reason: string } | null;
+}
+
 async function json<T>(res: Response): Promise<T> {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((body as { error?: string }).error ?? `Request failed (${res.status})`);
@@ -61,6 +72,7 @@ export const api = {
   openRun: (runId: string) => post<{ ok: true }>(`/api/runs/${runId}/open`, {}),
   note: (runId: string) => fetch(`/api/runs/${runId}/note`).then(json<{ note: string }>),
   history: (profileId: string) => fetch(`/api/profiles/${profileId}/history`).then(json<NonNullable<Account["usage"]["latest"]>[]>),
+  insights: () => fetch("/api/insights").then(json<Insights>),
   openLogin: (id: string) => fetch(`/api/profiles/${id}/login`, { method: "POST" }).then(json<{ command: string }>),
 };
 

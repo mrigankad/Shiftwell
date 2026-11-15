@@ -1,29 +1,33 @@
 import type { Provider, State } from "./api";
 
-/** Index of each provider's character in /crew.png (1776 x 592, six tiles). */
-const CREW_INDEX: Record<Provider, number> = { claude: 0, codex: 1, gemini: 2, api: 5 };
-/** Tiles for API key presets. TODO: nim, ollama-cloud and custom share the deepseek tile until they get their own art. */
-const PRESET_INDEX: Record<string, number> = { kimi: 3, grok: 4, deepseek: 5, nim: 5, "ollama-cloud": 5, custom: 5 };
+import { crewArtFor } from "./features/assets/crewArt";
+import { logoFor } from "./features/assets/logos";
+
 const TILE = 285;
 
 export function CrewAvatar({ provider, preset, size = 34, state }: { provider: Provider; preset?: string; size?: number; state?: State }) {
-  const s = size / TILE;
-  const i = provider === "api" && preset ? (PRESET_INDEX[preset] ?? CREW_INDEX.api) : CREW_INDEX[provider];
+  const art = crewArtFor(provider, preset);
   const dim = state === "out" ? "grayscale(0.7) brightness(0.8)" : state === "low" ? "saturate(0.6)" : undefined;
+  const base = "shrink-0 rounded-[9px] bg-no-repeat";
+  if (art.kind === "image") {
+    return <div aria-hidden className={base} style={{ width: size, height: size, backgroundImage: `url(${art.src})`, backgroundSize: "cover", backgroundPosition: "center", filter: dim, imageRendering: "pixelated" }} />;
+  }
+  const s = size / TILE;
   return (
-    <div
-      aria-hidden
-      className="shrink-0 rounded-[9px] bg-no-repeat"
-      style={{
-        width: size,
-        height: size,
-        backgroundImage: "url(/crew.png)",
-        backgroundSize: `${1776 * s}px ${592 * s}px`,
-        backgroundPosition: `${-(7 + 296 * i) * s}px ${-125 * s}px`,
-        filter: dim,
-        imageRendering: "pixelated",
-      }}
-    />
+    <div aria-hidden className={base}
+      style={{ width: size, height: size, backgroundImage: "url(/crew.png)", backgroundSize: `${1776 * s}px ${592 * s}px`,
+        backgroundPosition: `${-(7 + 296 * art.index) * s}px ${-125 * s}px`, filter: dim, imageRendering: "pixelated" }} />
+  );
+}
+
+/** Small provider mark on a light chip, so the dark logos stay visible in the night theme. */
+export function ProviderLogo({ provider, preset, size = 16 }: { provider: string; preset?: string; size?: number }) {
+  const src = logoFor(provider, preset);
+  if (!src) return null;
+  return (
+    <span aria-hidden className="inline-flex shrink-0 items-center justify-center rounded-md bg-white" style={{ width: size + 6, height: size + 6 }}>
+      <img src={src} alt="" width={size} height={size} className="object-contain" />
+    </span>
   );
 }
 

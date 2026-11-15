@@ -9,6 +9,21 @@ beforeEach(() => {
 });
 
 describe("daemon api", () => {
+  it("serves insights in the agreed shape", async () => {
+    const app = buildApp();
+    const empty = (await app.inject({ url: "/api/insights" })).json();
+    expect(empty).toMatchObject({ accounts: [], crewHeadroomNow: null, bestNext: null });
+    expect(typeof empty.generatedAt).toBe("string");
+    const p = (await app.inject({ method: "POST", url: "/api/profiles", payload: { name: "Claude A", provider: "claude" } })).json();
+    const res = await app.inject({ url: "/api/insights" });
+    expect(res.statusCode).toBe(200);
+    const a = res.json().accounts[0];
+    expect(Object.keys(a).sort()).toEqual(["avgDailyPeak", "heat", "hoursAtLimitLast7d", "id", "name", "peakLast7d", "provider", "readingsLast7d"]);
+    expect(a.id).toBe(p.id);
+    expect(a.heat).toHaveLength(7);
+    expect(a.heat[0]).toHaveLength(24);
+    expect(a.peakLast7d).toBeNull();
+  });
   it("creates a profile, lists it, and opens login without running a real terminal", async () => {
     const calls: string[] = [];
     const app = buildApp({ openTerminal: (cmd) => { calls.push(cmd); } });

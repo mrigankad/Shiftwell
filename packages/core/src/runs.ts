@@ -4,6 +4,18 @@ import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import { shiftwellHome, sub } from "./paths.js";
 import { getProfile, type Profile } from "./profiles.js";
+import { syncSkills } from "./skills.js";
+import { captureFromHandoff, memoryBlock } from "./memory.js";
+import { blockedPathsNote } from "./guardrails.js";
+
+/** Shared skills go into the account's instruction file, and project memory into HANDOFF.md, before the CLI starts. */
+function prepareWorktree(profile: Profile, repo: string, worktree: string): void {
+  try { syncSkills([profile]); } catch { /* skills are best effort */ }
+  try {
+    const mem = memoryBlock(repo);
+    if (mem.trim()) writeFileSync(join(worktree, "HANDOFF.md"), mem);
+  } catch { /* memory is best effort */ }
+}
 
 export type RunStatus = "active" | "handed-off" | "done";
 export interface Run {
@@ -100,6 +112,7 @@ export function startRuns(input: { profileIds: string[]; repo: string; task: str
     throw e;
   }
   save([...listRuns(), ...runs]);
+  runs.forEach((r, i) => prepareWorktree(profiles[i], top, r.worktree));
   return { groupId, runs };
 }
 
@@ -119,6 +132,7 @@ export function startRun(input: { profileId: string; repo: string; task: string 
   git(top, "worktree", "add", "-b", branch, worktree, baseRef);
   const run: Run = { id, profileId: profile.id, task, repo: top, worktree, branch, baseRef, startedAt: new Date().toISOString(), status: "active" };
   save([...listRuns(), run]);
+  prepareWorktree(profile, top, worktree);
   return run;
 }
 
@@ -163,8 +177,11 @@ export function handOff(runId: string, toProfileId: string, reason?: string): { 
   if (!from || !to) throw new Error("Unknown account");
   if (to.id === from.id) throw new Error("Pick a different account");
   if (!agentCommand(to)) throw new Error("This account has no CLI agent to run");
-  const note = handoffNote(run, from, to, reason);
+  let extra = "";
+  try { extra = blockedPathsNote() + memoryBlock(run.repo); } catch { /* optional sections */ }
+  const note = handoffNote(run, from, to, reason) + extra;
   writeFileSync(join(run.worktree, "HANDOFF.md"), note);
+  try { captureFromHandoff(run.repo, note); } catch { /* memory is best effort */ }
   const now = new Date().toISOString();
   update(run.id, { status: "handed-off", endedAt: now });
   const next: Run = { ...run, id: randomUUID().slice(0, 8), profileId: to.id, startedAt: now, status: "active", fromRunId: run.id, endedAt: undefined };

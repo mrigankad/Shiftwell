@@ -1,4 +1,4 @@
-import { listProfiles, installApiProvider } from "@shiftwell/core";
+import { listProfiles, installApiProvider, getGuardrails, inQuietHours } from "@shiftwell/core";
 import { buildApp } from "./app.js";
 import { pollGemini, startCodexPoller } from "./poller.js";
 import { notify, startAlertLoop } from "./notifier.js";
@@ -11,5 +11,5 @@ for (const p of listProfiles()) if (p.api) { try { installApiProvider(p, { port:
 app.listen({ host: "127.0.0.1", port: PORT }).then(() => {
   console.log(`Shiftwell daemon on http://127.0.0.1:${PORT}`);
   if (process.env.SHIFTWELL_NO_POLL !== "1") { startCodexPoller(); pollGemini(); setInterval(pollGemini, 60_000); }
-  if (process.env.SHIFTWELL_NO_NOTIFY !== "1") startAlertLoop({ notify });
+  if (process.env.SHIFTWELL_NO_NOTIFY !== "1") startAlertLoop({ notify: (t, b) => (inQuietHours(getGuardrails()) ? null : notify(t, b)) });
 });

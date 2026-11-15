@@ -8,9 +8,11 @@ import {
   listProfiles, createProfile, removeProfile, getProfile, envFor, loginCommand,
   installClaudeStatusHook, installGeminiTelemetry, usageFor, suggestHandoffs, type Provider, type Usage,
   listRuns, startRun, startRuns, runDiffStat, handOff, finishRun, agentCommand, HANDOFF_PROMPT, readHandoffNote, readSamples,
-  runChanges, cachedRunChanges, pruneRuns, apiPresets, installApiProvider, type ApiConfig,
+  runChanges, cachedRunChanges, pruneRuns, insights, apiPresets, installApiProvider, type ApiConfig, checkStart,
 } from "@shiftwell/core";
 import { registerShim } from "./shim.js";
+import { registerRuleRoutes } from "./routes-rules.js";
+import { registerKnowledgeRoutes } from "./routes-knowledge.js";
 
 const PROVIDERS: Provider[] = ["claude", "codex", "gemini", "api"];
 
@@ -44,9 +46,21 @@ export function buildApp(opts: { openTerminal?: typeof openLoginTerminal; fetch?
   const doFetch = opts.fetch ?? fetch;
 
   registerShim(app, doFetch);
+  registerRuleRoutes(app);
+  registerKnowledgeRoutes(app);
+
+  /** Guardrails: refuse to start work that breaks the owner's limits. */
+  const guard = (ids: string[]) => {
+    const profiles = listProfiles();
+    const usage = new Map<string, Usage>(profiles.map((p) => [p.id, usageFor(p)]));
+    const active = listRuns().filter((r) => r.status === "active").length;
+    const res = checkStart(ids, usage, active);
+    return res.ok ? null : res.problems.join(" ");
+  };
 
   app.get("/api/health", async () => ({ ok: true }));
   app.get("/api/board", async () => board());
+  app.get("/api/insights", async () => insights(listProfiles()));
   app.get("/api/presets", async () => apiPresets);
 
   app.post<{ Body: { name?: string; provider?: Provider; plan?: string; api?: ApiConfig } }>("/api/profiles", async (req, reply) => {
@@ -125,6 +139,8 @@ export function buildApp(opts: { openTerminal?: typeof openLoginTerminal; fetch?
   app.post<{ Body: { profileId?: string; profileIds?: string[]; repo?: string; task?: string } }>("/api/runs", async (req, reply) => {
     try {
       const body = req.body ?? {};
+      const blocked = guard(body.profileIds ?? (body.profileId ? [body.profileId] : []));
+      if (blocked) return reply.code(409).send({ error: blocked });
       if (body.profileIds !== undefined) {
         const group = startRuns({ profileIds: body.profileIds, repo: body.repo ?? "", task: body.task ?? "" });
         for (const run of group.runs) {

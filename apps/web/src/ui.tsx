@@ -54,7 +54,7 @@ export function Modal({ titleId, onClose, onSubmit, children, width = 480 }: {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
   return (
-    <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-6" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onMouseDown={onClose}>
       <form ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} onMouseDown={(e) => e.stopPropagation()} onSubmit={onSubmit}
         style={{ maxWidth: width }} className="flex w-full flex-col gap-5 rounded-2xl bg-card p-6 shadow-2xl">
         {children}

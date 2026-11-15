@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { api, type Account, type CheckResult } from "../api";
-import { CrewAvatar } from "../crew";
+import { CrewAvatar, ProviderLogo } from "../crew";
 import { EmptyState, PageTitle, STATE_PILL, type PageCtx } from "./shared";
 
 type Reading = NonNullable<Account["usage"]["latest"]>;
@@ -119,7 +119,10 @@ function AccountCard({ a, ctx }: { a: Account; ctx: PageCtx }) {
       <div className="flex items-center gap-3">
         <CrewAvatar provider={a.provider} preset={a.api?.preset} size={40} state={a.usage.state} />
         <div className="flex min-w-0 flex-1 flex-col">
-          <span className="truncate text-[17px] font-bold">{a.name}</span>
+          <button onClick={() => ctx.go(`accounts/${a.id}`)} className="flex cursor-pointer items-center gap-1.5 truncate text-left text-[17px] font-bold hover:underline">
+            <span className="truncate">{a.name}</span>
+            <ProviderLogo provider={a.provider} preset={a.api?.preset} size={14} />
+          </button>
           <span className="text-xs text-muted">{a.plan || "No plan set"} · {a.provider}</span>
         </div>
         <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${pill.cls}`}>{pill.label}</span>

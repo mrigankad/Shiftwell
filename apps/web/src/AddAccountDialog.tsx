@@ -59,7 +59,7 @@ export function AddAccountDialog({ onClose, onCreate }: {
   };
 
   return (
-    <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-6" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onMouseDown={onClose}>
       <form
         role="dialog"
         aria-modal="true"

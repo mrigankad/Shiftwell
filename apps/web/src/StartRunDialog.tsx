@@ -52,7 +52,7 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
   const ready = missing.length === 0 && (many ? picked.length >= 2 : !!profileId);
   const input = "rounded-lg border border-line px-3 py-2.5 text-[15px] outline-none focus:border-action";
   return (
-    <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-6" onMouseDown={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onMouseDown={onClose}>
       <form role="dialog" aria-modal="true" aria-labelledby="run-title" onMouseDown={(e) => e.stopPropagation()} onSubmit={submit}
         className="flex w-full max-w-[600px] flex-col gap-5 rounded-2xl bg-card p-6 shadow-2xl">
         <div className="flex flex-col gap-1">
