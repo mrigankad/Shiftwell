@@ -19,6 +19,8 @@ export interface Run {
   status: RunStatus;
   /** Set on a run that continues another run's work. */
   fromRunId?: string;
+  /** Shared by runs started together by startRuns (fan-out), so they can be compared. */
+  groupId?: string;
   endedAt?: string;
   /** True once finishRun removed the worktree folder (the branch is kept). */
   worktreeRemoved?: boolean;
@@ -47,18 +49,69 @@ export function agentCommand(profile: Profile, prompt?: string): string | null {
   }
 }
 
-/** Starts a run in a fresh git worktree on its own branch, so accounts never fight over one checkout. */
-export function startRun(input: { profileId: string; repo: string; task: string }): Run {
-  const profile = getProfile(input.profileId);
-  if (!profile) throw new Error("Unknown account");
-  if (!agentCommand(profile)) throw new Error("API key accounts cannot run a CLI agent yet");
-  const task = (input.task ?? "").trim();
+function checkTaskAndRepo(rawRepo: string | undefined, rawTask: string | undefined): { task: string; top: string; baseRef: string } {
+  const task = (rawTask ?? "").trim();
   if (!task) throw new Error("Describe the task");
-  const repo = resolve(input.repo ?? "");
+  const repo = resolve(rawRepo ?? "");
   let top: string;
   try { top = git(repo, "rev-parse", "--show-toplevel"); } catch { throw new Error(`${repo} is not a git repository`); }
   let baseRef: string;
   try { baseRef = git(top, "rev-parse", "HEAD"); } catch { throw new Error("The repository has no commits yet"); }
+  return { task, top, baseRef };
+}
+
+function checkProfile(profileId: string): Profile {
+  const profile = getProfile(profileId);
+  if (!profile) throw new Error("Unknown account");
+  if (!agentCommand(profile)) throw new Error("API key accounts cannot run a CLI agent yet");
+  return profile;
+}
+
+export const MAX_FANOUT = 6;
+
+/**
+ * Fan-out: the same task on several accounts at once, one worktree and branch (`shiftwell/<groupId>-<n>`)
+ * each. Everything is validated before any worktree is created; if creation itself fails, the ones already
+ * made are removed again.
+ */
+export function startRuns(input: { profileIds: string[]; repo: string; task: string }): { groupId: string; runs: Run[] } {
+  const ids = input.profileIds;
+  if (!Array.isArray(ids) || ids.length < 1) throw new Error("Pick at least one account");
+  if (ids.length > MAX_FANOUT) throw new Error(`Pick at most ${MAX_FANOUT} accounts`);
+  if (new Set(ids).size !== ids.length) throw new Error("Each account can only be picked once");
+  const profiles = ids.map((id) => checkProfile(id));
+  const { task, top, baseRef } = checkTaskAndRepo(input.repo, input.task);
+  const groupId = randomUUID().slice(0, 8);
+  const now = new Date().toISOString();
+  const runs: Run[] = [];
+  try {
+    profiles.forEach((profile, i) => {
+      const id = randomUUID().slice(0, 8);
+      const branch = `shiftwell/${groupId}-${i + 1}`;
+      const worktree = join(sub("worktrees"), id);
+      git(top, "worktree", "add", "-b", branch, worktree, baseRef);
+      runs.push({ id, profileId: profile.id, task, repo: top, worktree, branch, baseRef, startedAt: now, status: "active", groupId });
+    });
+  } catch (e) {
+    for (const r of runs) {
+      try { git(top, "worktree", "remove", "--force", r.worktree); git(top, "branch", "-D", r.branch); } catch { /* best effort */ }
+    }
+    throw e;
+  }
+  save([...listRuns(), ...runs]);
+  return { groupId, runs };
+}
+
+/** `git diff --stat` since the run started, or null if the worktree is missing or git fails. */
+export function runDiffStat(run: Run): string | null {
+  if (!existsSync(run.worktree)) return null;
+  try { return git(run.worktree, "diff", "--stat", run.baseRef); } catch { return null; }
+}
+
+/** Starts a run in a fresh git worktree on its own branch, so accounts never fight over one checkout. */
+export function startRun(input: { profileId: string; repo: string; task: string }): Run {
+  const profile = checkProfile(input.profileId);
+  const { task, top, baseRef } = checkTaskAndRepo(input.repo, input.task);
   const id = randomUUID().slice(0, 8);
   const branch = `shiftwell/${id}`;
   const worktree = join(sub("worktrees"), id);

@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import {
   listProfiles, createProfile, removeProfile, getProfile, envFor, loginCommand,
   installClaudeStatusHook, installGeminiTelemetry, usageFor, suggestHandoffs, type Provider, type Usage,
-  listRuns, startRun, handOff, finishRun, agentCommand, HANDOFF_PROMPT, readHandoffNote, readSamples,
+  listRuns, startRun, startRuns, runDiffStat, handOff, finishRun, agentCommand, HANDOFF_PROMPT, readHandoffNote, readSamples,
   runChanges, cachedRunChanges, pruneRuns,
 } from "@shiftwell/core";
 
@@ -88,13 +88,35 @@ export function buildApp(opts: { openTerminal?: typeof openLoginTerminal } = {})
     return readSamples(req.params.id, 300);
   });
 
-  app.post<{ Body: { profileId?: string; repo?: string; task?: string } }>("/api/runs", async (req, reply) => {
+  // Body { profileId, repo, task } starts one run and returns it. Body { profileIds, repo, task } fans out
+  // and returns { groupId, runs }. Both open one terminal per run.
+  app.post<{ Body: { profileId?: string; profileIds?: string[]; repo?: string; task?: string } }>("/api/runs", async (req, reply) => {
     try {
-      const run = startRun({ profileId: req.body?.profileId ?? "", repo: req.body?.repo ?? "", task: req.body?.task ?? "" });
+      const body = req.body ?? {};
+      if (body.profileIds !== undefined) {
+        const group = startRuns({ profileIds: body.profileIds, repo: body.repo ?? "", task: body.task ?? "" });
+        for (const run of group.runs) {
+          const p = getProfile(run.profileId)!;
+          openTerminal(agentCommand(p, run.task)!, envFor(p), run.worktree, `Shiftwell: ${p.name}`);
+        }
+        return reply.code(201).send(group);
+      }
+      const run = startRun({ profileId: body.profileId ?? "", repo: body.repo ?? "", task: body.task ?? "" });
       const p = getProfile(run.profileId)!;
       openTerminal(agentCommand(p, run.task)!, envFor(p), run.worktree, `Shiftwell: ${p.name}`);
       return reply.code(201).send(run);
     } catch (e) { return fail(reply, e); }
+  });
+
+  // Side-by-side view of a fan-out group: each run with fresh change counts and its `git diff --stat`.
+  app.get<{ Params: { groupId: string } }>("/api/groups/:groupId", async (req, reply) => {
+    const runs = listRuns().filter((r) => r.groupId === req.params.groupId);
+    if (!runs.length) return reply.code(404).send({ error: "No such group" });
+    return {
+      groupId: req.params.groupId,
+      task: runs[0].task,
+      runs: runs.map((r) => ({ ...r, changes: runChanges(r, { fresh: true }), diffStat: runDiffStat(r) })),
+    };
   });
 
   app.post<{ Params: { id: string }; Body: { toProfileId?: string; reason?: string } }>("/api/runs/:id/handoff", async (req, reply) => {

@@ -15,6 +15,7 @@
   --color-cta: #16181D;
   --color-on-cta: #FFFFFF;
   --color-action: #C9480A;
+  --color-on-action: #FFFFFF;
   --color-action-soft: #FFF0E6;
   --color-action-line: #F7D9C4;
   --color-pick: #FFFAF6;
@@ -43,6 +44,7 @@
     --color-cta: #F2F3F6;
     --color-on-cta: #12141B;
     --color-action: #FF7A3D;
+    --color-on-action: #12141B;
     --color-action-soft: #2A1A12;
     --color-action-line: #4A2A18;
     --color-pick: #22170F;

@@ -3,7 +3,7 @@ import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
-import { createProfile, startRun, handOff, finishRun, listRuns, agentCommand, readHandoffNote, runChanges, pruneRuns, getRun } from "../src/index.js";
+import { createProfile, startRun, startRuns, handOff, finishRun, listRuns, agentCommand, readHandoffNote, runChanges, pruneRuns, getRun } from "../src/index.js";
 
 let repo: string;
 const git = (...a: string[]) => execFileSync("git", a, { cwd: repo, encoding: "utf8" });
@@ -39,6 +39,33 @@ describe("runs", () => {
     expect(() => startRun({ profileId: a.id, repo: tmpdir(), task: "x" })).toThrow();
     expect(() => startRun({ profileId: k.id, repo, task: "x" })).toThrow("API key");
     expect(() => startRun({ profileId: a.id, repo, task: "  " })).toThrow("Describe");
+  });
+  it("fans out one task to several accounts, each in its own worktree", () => {
+    const ps = ["A", "B", "C"].map((n, i) => createProfile({ name: n, provider: (["claude", "codex", "gemini"] as const)[i] }));
+    const { groupId, runs } = startRuns({ profileIds: ps.map((p) => p.id), repo, task: "Do it" });
+    expect(runs).toHaveLength(3);
+    expect(new Set(runs.map((r) => r.worktree)).size).toBe(3);
+    runs.forEach((r, i) => {
+      expect(r.groupId).toBe(groupId);
+      expect(r.branch).toBe(`shiftwell/${groupId}-${i + 1}`);
+      expect(existsSync(join(r.worktree, "a.txt"))).toBe(true);
+    });
+    expect(listRuns().filter((r) => r.groupId === groupId)).toHaveLength(3);
+    expect(startRun({ profileId: ps[0].id, repo, task: "solo" }).groupId).toBeUndefined();
+  });
+  it("creates nothing when fan-out validation fails", () => {
+    const a = createProfile({ name: "A", provider: "claude" });
+    const b = createProfile({ name: "B", provider: "codex" });
+    const k = createProfile({ name: "K", provider: "api" });
+    const many = Array.from({ length: 7 }, () => a.id);
+    const bad: [string[], string, string][] = [
+      [[], repo, "x"], [many, repo, "x"], [[a.id, a.id], repo, "x"], [[a.id, "nope"], repo, "x"],
+      [[a.id, k.id], repo, "x"], [[a.id, b.id], tmpdir(), "x"], [[a.id, b.id], repo, "  "],
+    ];
+    for (const [profileIds, r, task] of bad) expect(() => startRuns({ profileIds, repo: r, task })).toThrow();
+    expect(listRuns()).toEqual([]);
+    expect(git("worktree", "list").trim().split("\n")).toHaveLength(1);
+    expect(git("branch", "--list", "shiftwell/*").trim()).toBe("");
   });
   it("builds CLI commands with the first prompt", () => {
     const g = createProfile({ name: "G", provider: "gemini" });

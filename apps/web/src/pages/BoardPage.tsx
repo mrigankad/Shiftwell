@@ -65,7 +65,7 @@ export function BoardPage({ ctx, board }: { ctx: PageCtx; board: Board | null })
             <span className="text-sm text-body">{suggestion.reason}</span>
           </div>
           {suggestedRun ? (
-            <button onClick={() => ctx.handOff(suggestedRun, suggestion.toId, suggestion.reason)} className="shrink-0 cursor-pointer rounded-[10px] bg-action px-4 py-2.5 text-sm font-bold text-white hover:brightness-110">
+            <button onClick={() => ctx.handOff(suggestedRun, suggestion.toId, suggestion.reason)} className="shrink-0 cursor-pointer rounded-[10px] bg-action px-4 py-2.5 text-sm font-bold text-on-action hover:brightness-110">
               Hand off to {suggestion.to}
             </button>
           ) : (

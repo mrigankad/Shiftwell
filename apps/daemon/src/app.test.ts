@@ -78,4 +78,46 @@ describe("daemon api", () => {
     board = (await app.inject({ url: "/api/board" })).json();
     expect(board.runs.find((r: any) => r.id === r2.id)).toMatchObject({ status: "done" });
   });
+  it("fans out to several accounts, compares the group, and keeps the single-run body working", async () => {
+    const { execFileSync } = await import("node:child_process");
+    const { writeFileSync, existsSync } = await import("node:fs");
+    const repo = mkdtempSync(join(tmpdir(), "sw-repo-"));
+    const git = (...a: string[]) => execFileSync("git", a, { cwd: repo });
+    git("init", "-q"); git("config", "user.email", "t@t"); git("config", "user.name", "t");
+    writeFileSync(join(repo, "a.txt"), "x\n"); git("add", "."); git("commit", "-qm", "init");
+    const calls: { cmd: string; cwd?: string }[] = [];
+    const app = buildApp({ openTerminal: (cmd, _env, cwd) => { calls.push({ cmd, cwd }); } });
+    const mk = async (name: string, provider: string) => (await app.inject({ method: "POST", url: "/api/profiles", payload: { name, provider } })).json();
+    const [a, b, c] = [await mk("A", "claude"), await mk("B", "codex"), await mk("C", "gemini")];
+    const k = await mk("K", "api");
+    // validation failure creates nothing and opens nothing
+    const bad = await app.inject({ method: "POST", url: "/api/runs", payload: { profileIds: [a.id, k.id], repo, task: "t" } });
+    expect(bad.statusCode).toBe(400);
+    expect((await app.inject({ url: "/api/runs" })).json()).toEqual([]);
+    expect(calls).toHaveLength(0);
+    // fan-out of 3
+    const res = await app.inject({ method: "POST", url: "/api/runs", payload: { profileIds: [a.id, b.id, c.id], repo, task: "Fix it" } });
+    expect(res.statusCode).toBe(201);
+    const { groupId, runs } = res.json();
+    expect(runs).toHaveLength(3);
+    expect(calls.map((x) => x.cwd)).toEqual(runs.map((r: any) => r.worktree));
+    expect(runs.every((r: any) => existsSync(r.worktree) && r.groupId === groupId)).toBe(true);
+    // compare endpoint
+    writeFileSync(join(runs[0].worktree, "a.txt"), "changed\n");
+    const cmp = await app.inject({ url: `/api/groups/${groupId}` });
+    expect(cmp.statusCode).toBe(200);
+    const body = cmp.json();
+    expect(body).toMatchObject({ groupId, task: "Fix it" });
+    expect(body.runs).toHaveLength(3);
+    expect(body.runs[0].changes).toEqual({ commits: 0, files: 1 });
+    expect(body.runs[0].diffStat).toContain("a.txt");
+    expect(body.runs[1].diffStat).toBe("");
+    expect((await app.inject({ url: "/api/groups/nope" })).statusCode).toBe(404);
+    // old body still returns a single Run
+    const single = await app.inject({ method: "POST", url: "/api/runs", payload: { profileId: a.id, repo, task: "solo" } });
+    expect(single.statusCode).toBe(201);
+    expect(single.json().id).toBeTruthy();
+    expect(single.json().runs).toBeUndefined();
+    expect(single.json().groupId).toBeUndefined();
+  });
 });

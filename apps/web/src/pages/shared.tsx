@@ -49,6 +49,7 @@ export interface PageCtx {
   handOff: (run: Run, toId: string, reason?: string) => void;
   openRun: (run: Run) => void;
   finishRun: (run: Run) => void;
+  prune: () => void;
   login: (a: Account) => void;
   remove: (a: Account) => void;
   addAccount: () => void;
@@ -56,16 +57,16 @@ export interface PageCtx {
   go: (page: string) => void;
 }
 
-export function runList(ctx: PageCtx, list: Run[]): ReactNode {
+export function runRow(ctx: PageCtx, r: Run): ReactNode {
   return (
-    <div className="rounded-xl border border-line">
-      {list.map((r) => (
-        <RunRow key={r.id} run={r} name={ctx.nameOf(r.profileId)} provider={ctx.providerOf(r.profileId)} accounts={ctx.accounts}
-          fromName={r.fromRunId ? ctx.nameOf(ctx.runs.find((x) => x.id === r.fromRunId)?.profileId ?? "") : undefined}
-          onOpen={() => ctx.openRun(r)} onFinish={() => ctx.finishRun(r)} onHandOff={(toId) => ctx.handOff(r, toId)} />
-      ))}
-    </div>
+    <RunRow key={r.id} run={r} name={ctx.nameOf(r.profileId)} provider={ctx.providerOf(r.profileId)} accounts={ctx.accounts}
+      fromName={r.fromRunId ? ctx.nameOf(ctx.runs.find((x) => x.id === r.fromRunId)?.profileId ?? "") : undefined}
+      onOpen={() => ctx.openRun(r)} onFinish={() => ctx.finishRun(r)} onHandOff={(toId) => ctx.handOff(r, toId)} />
   );
+}
+
+export function runList(ctx: PageCtx, list: Run[]): ReactNode {
+  return <div className="rounded-xl border border-line">{list.map((r) => runRow(ctx, r))}</div>;
 }
 
 export function PageTitle({ eyebrow, title, children }: { eyebrow?: string; title: string; children?: ReactNode }) {
@@ -111,7 +112,7 @@ export function RunRow({ run, name, provider, fromName, accounts, onOpen, onFini
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-[15px] font-bold">{run.task}</span>
         <span className="truncate text-xs text-muted">
-          {name}{fromName ? ` · picked up from ${fromName}` : ""} · {run.branch} · {ago(run.startedAt)}{changeText}
+          {name}{fromName ? ` · picked up from ${fromName}` : ""} · {run.branch} · {ago(run.startedAt)}{changeText}{run.worktreeRemoved ? " · folder removed" : ""}
         </span>
       </div>
       <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-bold ${pill.cls}`}>{pill.label}</span>

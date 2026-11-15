@@ -86,7 +86,7 @@ export function AddAccountDialog({ onClose, onCreate }: {
 
         <div className="flex justify-end gap-2.5">
           <button type="button" onClick={onClose} className="cursor-pointer rounded-lg border border-line px-4 py-2.5 text-sm font-bold hover:bg-surface">Cancel</button>
-          <button type="submit" disabled={busy || !name.trim()} className="cursor-pointer rounded-lg bg-action px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="submit" disabled={busy || !name.trim()} className="cursor-pointer rounded-lg bg-action px-4 py-2.5 text-sm font-bold text-on-action disabled:cursor-not-allowed disabled:opacity-50">
             {busy ? "Adding…" : "Add account"}
           </button>
         </div>

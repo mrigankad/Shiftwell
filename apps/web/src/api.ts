@@ -23,7 +23,10 @@ export interface Run {
   id: string; profileId: string; task: string; repo: string; worktree: string; branch: string;
   startedAt: string; endedAt?: string; status: "active" | "handed-off" | "done"; fromRunId?: string;
   changes?: { commits: number; files: number } | null;
+  groupId?: string; worktreeRemoved?: boolean;
 }
+export interface GroupRun extends Run { changes: { commits: number; files: number } | null; diffStat: string | null }
+export interface RunGroup { groupId: string; task: string; runs: GroupRun[] }
 export interface Board { generatedAt: string; accounts: Account[]; runs: Run[]; suggestions: Suggestion[] }
 
 async function json<T>(res: Response): Promise<T> {
@@ -41,7 +44,11 @@ export const api = {
   removeProfile: (id: string) => fetch(`/api/profiles/${id}`, { method: "DELETE" }).then(json),
   startRun: (input: { profileId: string; repo: string; task: string }) => post<Run>("/api/runs", input),
   handOff: (runId: string, toProfileId: string, reason?: string) => post<{ run: Run; note: string }>(`/api/runs/${runId}/handoff`, { toProfileId, reason }),
-  finishRun: (runId: string) => post<Run>(`/api/runs/${runId}/finish`, {}),
+  startRuns: (input: { profileIds: string[]; repo: string; task: string }) => post<{ groupId: string; runs: Run[] }>("/api/runs", input),
+  finishRun: (runId: string, opts: { removeWorktree?: boolean } = {}) =>
+    post<Run & { worktreeRemoved?: true; warning?: string }>(`/api/runs/${runId}/finish`, opts),
+  pruneRuns: () => post<{ pruned: number }>("/api/runs/prune", {}),
+  group: (groupId: string) => fetch(`/api/groups/${encodeURIComponent(groupId)}`).then(json<RunGroup>),
   openRun: (runId: string) => post<{ ok: true }>(`/api/runs/${runId}/open`, {}),
   note: (runId: string) => fetch(`/api/runs/${runId}/note`).then(json<{ note: string }>),
   history: (profileId: string) => fetch(`/api/profiles/${profileId}/history`).then(json<NonNullable<Account["usage"]["latest"]>[]>),

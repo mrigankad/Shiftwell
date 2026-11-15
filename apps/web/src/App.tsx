@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { api, subscribe, type Account, type Board, type Provider, type Run } from "./api";
 import { Mark } from "./crew";
 import { AddAccountDialog } from "./AddAccountDialog";
-import { StartRunDialog } from "./StartRunDialog";
+import { StartRunDialog, type StartInput } from "./StartRunDialog";
 import { ThemeSwitch, useTheme } from "./theme";
 import { BoardPage } from "./pages/BoardPage";
 import { RunsPage } from "./pages/RunsPage";
 import { HandoffsPage } from "./pages/HandoffsPage";
+import { FinishRunDialog } from "./FinishRunDialog";
+import { ComparePage } from "./pages/ComparePage";
 import { AccountsPage } from "./pages/AccountsPage";
 import type { PageCtx } from "./pages/shared";
 
@@ -14,19 +16,19 @@ const PAGES = ["board", "runs", "handoffs", "accounts"] as const;
 type Page = (typeof PAGES)[number];
 const TITLES: Record<Page, string> = { board: "Shift board", runs: "Runs", handoffs: "Handoffs", accounts: "Accounts" };
 
-const readHash = (): Page => {
-  const h = window.location.hash.replace(/^#\/?/, "");
-  return (PAGES as readonly string[]).includes(h) ? (h as Page) : "board";
-};
+const readHash = (): string => window.location.hash.replace(/^#\/?/, "");
 
-function usePage(): [Page, (p: Page) => void] {
-  const [page, setPage] = useState<Page>(readHash);
+/** The page for the hash, plus the group id on #/compare/<groupId>. */
+function usePage(): [Page, string | null, (p: Page) => void] {
+  const [hash, setHash] = useState(readHash);
   useEffect(() => {
-    const on = () => setPage(readHash());
+    const on = () => setHash(readHash());
     window.addEventListener("hashchange", on);
     return () => window.removeEventListener("hashchange", on);
   }, []);
-  return [page, (p) => { window.location.hash = `/${p}`; }];
+  const m = /^compare\/(.+)$/.exec(hash);
+  const page: Page = m ? "runs" : (PAGES as readonly string[]).includes(hash) ? (hash as Page) : "board";
+  return [page, m ? decodeURIComponent(m[1]) : null, (p) => { window.location.hash = `/${p}`; }];
 }
 
 function Sidebar({ page, go, accountCount, activeRuns, connected }: {
@@ -81,7 +83,8 @@ export function App() {
   const [adding, setAdding] = useState(false);
   const [starting, setStarting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [page, go] = usePage();
+  const [page, compareId, go] = usePage();
+  const [finishing, setFinishing] = useState<Run | null>(null);
 
   useEffect(() => subscribe(setBoard, setConnected), []);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }, [toast]);
@@ -99,7 +102,13 @@ export function App() {
     handOff: (run: Run, toId: string, reason?: string) =>
       act(() => api.handOff(run.id, toId, reason), `Handed off to ${nameOf(toId)}. Its CLI opened in the same worktree with HANDOFF.md.`),
     openRun: (r) => act(() => api.openRun(r.id), `Opened ${nameOf(r.profileId)} in the run's worktree`),
-    finishRun: (r) => act(() => api.finishRun(r.id), "Run marked done. The worktree and branch stay for you to merge."),
+    finishRun: (r) => setFinishing(r),
+    prune: async () => {
+      try {
+        const { pruned } = await api.pruneRuns();
+        setToast(pruned > 0 ? `Closed ${pruned} ${pruned === 1 ? "run" : "runs"} whose folder was gone` : "Nothing to clean up");
+      } catch (e) { setToast((e as Error).message); }
+    },
     login: async (a: Account) => {
       try { const r = await api.openLogin(a.id); setToast(`Opened a terminal running "${r.command}" for ${a.name}`); }
       catch (e) { setToast((e as Error).message); }
@@ -125,7 +134,8 @@ export function App() {
         </header>
 
         {page === "board" && <BoardPage ctx={ctx} board={board} />}
-        {page === "runs" && <RunsPage ctx={ctx} />}
+        {page === "runs" && !compareId && <RunsPage ctx={ctx} />}
+        {page === "runs" && compareId && <ComparePage ctx={ctx} groupId={compareId} />}
         {page === "handoffs" && <HandoffsPage ctx={ctx} />}
         {page === "accounts" && <AccountsPage ctx={ctx} />}
       </main>
@@ -143,7 +153,24 @@ export function App() {
 
       {starting && (
         <StartRunDialog accounts={accounts} onClose={() => setStarting(false)}
-          onStart={async (input) => { const r = await api.startRun(input); setStarting(false); setToast(`Run started on ${r.branch}. The CLI opened in its worktree.`); }} />
+          onStart={async (input: StartInput) => {
+            if ("profileIds" in input) {
+              const r = await api.startRuns(input);
+              setStarting(false); setToast(`Started ${r.runs.length} runs in parallel`);
+            } else {
+              const r = await api.startRun(input);
+              setStarting(false); setToast(`Run started on ${r.branch}. The CLI opened in its worktree.`);
+            }
+          }} />
+      )}
+
+      {finishing && (
+        <FinishRunDialog run={finishing} onClose={() => setFinishing(null)}
+          onFinish={async (removeWorktree) => {
+            const r = await api.finishRun(finishing.id, { removeWorktree });
+            setFinishing(null);
+            setToast(r.warning ?? (r.worktreeRemoved ? "Run marked done. The worktree folder was removed, the branch stays." : "Run marked done. The worktree and branch stay for you to merge."));
+          }} />
       )}
 
       {toast && (

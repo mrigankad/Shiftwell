@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { Account } from "./api";
 import { CrewAvatar } from "./crew";
+import { CheckBox, Segmented } from "./ui";
+
+export type StartInput = { profileId: string; repo: string; task: string } | { profileIds: string[]; repo: string; task: string };
+const MAX_PARALLEL = 6;
 
 const REPO_KEY = "shiftwell.lastRepo";
 const readRepo = () => { try { return localStorage.getItem(REPO_KEY) ?? ""; } catch { return ""; } };
@@ -10,12 +14,14 @@ const saveRepo = (v: string) => { try { localStorage.setItem(REPO_KEY, v); } cat
 export function StartRunDialog({ accounts, onClose, onStart }: {
   accounts: Account[];
   onClose: () => void;
-  onStart: (input: { profileId: string; repo: string; task: string }) => Promise<void>;
+  onStart: (input: StartInput) => Promise<void>;
 }) {
   const usable = accounts
     .filter((a) => a.provider !== "api")
     .sort((x, y) => rank(x) - rank(y));
   const [profileId, setProfileId] = useState(usable.find((a) => a.usage.state !== "out")?.id ?? usable[0]?.id ?? "");
+  const [mode, setMode] = useState<"one" | "many">("one");
+  const [picked, setPicked] = useState<string[]>([]);
   const [repo, setRepo] = useState(readRepo);
   const [task, setTask] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,11 +38,17 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true); setError(null);
-    try { saveRepo(repo.trim()); await onStart({ profileId, repo: repo.trim(), task }); }
+    try {
+      saveRepo(repo.trim());
+      await onStart(mode === "many" ? { profileIds: picked, repo: repo.trim(), task } : { profileId, repo: repo.trim(), task });
+    }
     catch (err) { setError((err as Error).message); }
     finally { setBusy(false); }
   };
 
+  const toggle = (id: string) => setPicked((p) => p.includes(id) ? p.filter((x) => x !== id) : p.length < MAX_PARALLEL ? [...p, id] : p);
+  const many = mode === "many";
+  const ready = many ? picked.length >= 2 : !!profileId;
   const input = "rounded-lg border border-line px-3 py-2.5 text-[15px] outline-none focus:border-action";
   return (
     <div className="fixed inset-0 z-10 flex items-center justify-center bg-black/40 p-6" onMouseDown={onClose}>
@@ -50,23 +62,39 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
         {usable.length === 0 ? (
           <p className="rounded-lg bg-surface px-3 py-3 text-sm text-body">Add a Claude Code, Codex or Gemini account first. API key accounts cannot run a CLI agent yet.</p>
         ) : (
-          <div role="radiogroup" aria-label="Account" className="flex max-h-[220px] flex-col gap-2 overflow-y-auto">
-            {usable.map((a) => {
-              const on = profileId === a.id;
-              const out = a.usage.state === "out";
-              return (
-                <button type="button" role="radio" aria-checked={on} key={a.id} onClick={() => setProfileId(a.id)}
-                  className={`flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left ${on ? "border-2 border-action bg-pick" : "border border-line hover:bg-surface"}`}>
-                  <CrewAvatar provider={a.provider} size={32} state={a.usage.state} />
-                  <span className="flex flex-1 flex-col">
-                    <span className="text-[15px] font-bold">{a.name}</span>
-                    <span className="text-xs text-body">{roomText(a)}</span>
-                  </span>
-                  {out && <span className="rounded-full bg-fail-soft px-2.5 py-0.5 text-xs font-bold text-fail">Out</span>}
-                </button>
-              );
-            })}
-          </div>
+          <>
+            <Segmented label="Run mode" value={mode} onChange={setMode} options={[{ id: "one", label: "One account" }, { id: "many", label: "Several in parallel" }]} />
+            {many && (
+              <div className="flex items-center justify-between gap-3 text-xs text-body">
+                <span>Each account gets its own worktree and branch, so you can compare the results.</span>
+                <span className="shrink-0 font-bold text-ink">{picked.length} of {MAX_PARALLEL} selected</span>
+              </div>
+            )}
+            <div role={many ? "group" : "radiogroup"} aria-label="Account" className="flex max-h-[220px] flex-col gap-2 overflow-y-auto">
+              {usable.map((a) => {
+                const on = many ? picked.includes(a.id) : profileId === a.id;
+                const out = a.usage.state === "out";
+                const full = many && !on && picked.length >= MAX_PARALLEL;
+                const body = (
+                  <>
+                    {many && <CheckBox checked={on} onChange={() => toggle(a.id)} disabled={full} />}
+                    <CrewAvatar provider={a.provider} size={32} state={a.usage.state} />
+                    <span className="flex flex-1 flex-col">
+                      <span className="text-[15px] font-bold">{a.name}</span>
+                      <span className="text-xs text-body">{roomText(a)}</span>
+                    </span>
+                    {out && <span className="rounded-full bg-fail-soft px-2.5 py-0.5 text-xs font-bold text-fail">Out</span>}
+                  </>
+                );
+                const cls = `flex items-center gap-3 rounded-xl px-3 py-2.5 text-left ${on ? "border-2 border-action bg-pick" : "border border-line"}`;
+                return many ? (
+                  <div key={a.id} onClick={() => { if (!full) toggle(a.id); }} className={`${cls} ${full ? "opacity-50" : "cursor-pointer hover:bg-surface"}`}>{body}</div>
+                ) : (
+                  <button type="button" role="radio" aria-checked={on} key={a.id} onClick={() => setProfileId(a.id)} className={`${cls} cursor-pointer hover:bg-surface`}>{body}</button>
+                );
+              })}
+            </div>
+          </>
         )}
 
         <label className="flex flex-col gap-1.5">
@@ -82,8 +110,8 @@ export function StartRunDialog({ accounts, onClose, onStart }: {
 
         <div className="flex justify-end gap-2.5">
           <button type="button" onClick={onClose} className="cursor-pointer rounded-lg border border-line px-4 py-2.5 text-sm font-bold hover:bg-surface">Cancel</button>
-          <button type="submit" disabled={busy || !profileId || !repo.trim() || !task.trim()} className="cursor-pointer rounded-lg bg-action px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
-            {busy ? "Starting…" : "Start run"}
+          <button type="submit" disabled={busy || !ready || !repo.trim() || !task.trim()} className="cursor-pointer rounded-lg bg-action px-4 py-2.5 text-sm font-bold text-on-action disabled:cursor-not-allowed disabled:opacity-50">
+            {busy ? "Starting..." : many ? (picked.length < 2 ? "Pick 2 or more" : `Start ${picked.length} runs`) : "Start run"}
           </button>
         </div>
       </form>

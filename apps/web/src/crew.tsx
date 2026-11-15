@@ -27,9 +27,9 @@ export function CrewAvatar({ provider, size = 34, state }: { provider: Provider;
 
 export function Mark({ size = 26, light = false }: { size?: number; light?: boolean }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden>
-      <polygon points="14,7 46,7 40,21 8,21" fill={light ? "#fff" : "#16181D"} />
-      <polygon points="8,27 40,27 34,41 2,41" fill="#FF5A1F" />
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden className="text-ink">
+      <polygon points="14,7 46,7 40,21 8,21" fill={light ? "#fff" : "currentColor"} />
+      <polygon points="8,27 40,27 34,41 2,41" fill="var(--color-shift)" />
     </svg>
   );
 }
