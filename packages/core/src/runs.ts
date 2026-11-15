@@ -20,6 +20,8 @@ export interface Run {
   /** Set on a run that continues another run's work. */
   fromRunId?: string;
   endedAt?: string;
+  /** True once finishRun removed the worktree folder (the branch is kept). */
+  worktreeRemoved?: boolean;
 }
 
 const file = () => join(shiftwellHome(), "runs.json");
@@ -118,11 +120,76 @@ export function handOff(runId: string, toProfileId: string, reason?: string): { 
   return { run: next, note };
 }
 
-export function finishRun(runId: string): Run {
+/**
+ * Ends a run. With `removeWorktree`, also deletes its worktree folder (the branch stays, so the work can
+ * still be merged), unless another active run shares the folder.
+ * Removal problems never fail the call: the run is still marked done and the reason comes back in the
+ * transient `warning` field (not stored in runs.json).
+ */
+export function finishRun(runId: string, opts: { removeWorktree?: boolean } = {}): Run & { warning?: string } {
   const run = getRun(runId);
   if (!run) throw new Error("Unknown run");
   update(run.id, { status: "done", endedAt: new Date().toISOString() });
-  return getRun(run.id)!;
+  let warning: string | undefined;
+  if (opts.removeWorktree) {
+    if (listRuns().some((r) => r.id !== run.id && r.status === "active" && r.worktree === run.worktree)) {
+      warning = "Worktree kept: another active run is using it";
+    } else if (existsSync(run.worktree)) {
+      try {
+        git(run.repo, "worktree", "remove", "--force", run.worktree);
+        update(run.id, { worktreeRemoved: true });
+      } catch (e) {
+        warning = `Could not remove the worktree: ${((e as Error).message || "git failed").trim()}`;
+      }
+    } else {
+      update(run.id, { worktreeRemoved: true });
+    }
+  }
+  const done = getRun(run.id)!;
+  return warning ? { ...done, warning } : done;
+}
+
+/** Marks active runs whose worktree folder is gone as done. Returns how many changed. */
+export function pruneRuns(): number {
+  const now = new Date().toISOString();
+  let n = 0;
+  const runs = listRuns().map((r) => {
+    if (r.status === "active" && !existsSync(r.worktree)) { n++; return { ...r, status: "done" as const, endedAt: now }; }
+    return r;
+  });
+  if (n) save(runs);
+  return n;
+}
+
+export interface RunChanges { commits: number; files: number }
+const CHANGES_TTL_MS = 15_000;
+const changesCache = new Map<string, { at: number; value: RunChanges | null }>();
+
+/** Last computed value for a run (even if stale), without running git. */
+export const cachedRunChanges = (run: Run): RunChanges | null => changesCache.get(run.id)?.value ?? null;
+
+/**
+ * How much a run has changed since it started: commits past baseRef, and distinct files changed
+ * (committed, uncommitted and untracked; HANDOFF.md excluded). Null if the worktree is missing or git fails.
+ * Cached per run id for 15 s; pass `fresh` to skip the cache.
+ */
+export function runChanges(run: Run, opts: { fresh?: boolean } = {}): RunChanges | null {
+  const hit = changesCache.get(run.id);
+  if (!opts.fresh && hit && Date.now() - hit.at < CHANGES_TTL_MS) return hit.value;
+  let value: RunChanges | null = null;
+  if (existsSync(run.worktree)) {
+    try {
+      const commits = parseInt(git(run.worktree, "rev-list", "--count", `${run.baseRef}..HEAD`), 10);
+      const paths = new Set<string>();
+      const lines = (out: string) => out.split("\0").filter(Boolean);
+      for (const p of lines(git(run.worktree, "diff", "--name-only", "-z", run.baseRef))) paths.add(p);
+      for (const p of lines(git(run.worktree, "ls-files", "--others", "--exclude-standard", "-z"))) paths.add(p);
+      paths.delete("HANDOFF.md");
+      value = Number.isFinite(commits) ? { commits, files: paths.size } : null;
+    } catch { value = null; }
+  }
+  changesCache.set(run.id, { at: Date.now(), value });
+  return value;
 }
 
 /** The handoff note that started this run, if it was picked up from another account. */

@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { mkdtempSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
-import { createProfile, startRun, handOff, finishRun, listRuns, agentCommand, readHandoffNote } from "../src/index.js";
+import { createProfile, startRun, handOff, finishRun, listRuns, agentCommand, readHandoffNote, runChanges, pruneRuns, getRun } from "../src/index.js";
 
 let repo: string;
 const git = (...a: string[]) => execFileSync("git", a, { cwd: repo, encoding: "utf8" });
@@ -43,5 +43,59 @@ describe("runs", () => {
   it("builds CLI commands with the first prompt", () => {
     const g = createProfile({ name: "G", provider: "gemini" });
     expect(agentCommand(g, 'say "hi"')).toBe(`gemini -i "say 'hi'"`);
+  });
+  it("counts commits and distinct changed files, ignoring HANDOFF.md, and caches", () => {
+    const a = createProfile({ name: "A", provider: "claude" });
+    const run = startRun({ profileId: a.id, repo, task: "t" });
+    expect(runChanges(run)).toEqual({ commits: 0, files: 0 });
+    const wgit = (...x: string[]) => execFileSync("git", x, { cwd: run.worktree });
+    writeFileSync(join(run.worktree, "c.txt"), "c\n"); wgit("add", "."); wgit("commit", "-qm", "c");
+    writeFileSync(join(run.worktree, "a.txt"), "changed\n"); // uncommitted tracked
+    writeFileSync(join(run.worktree, "u.txt"), "u\n"); // untracked
+    writeFileSync(join(run.worktree, "HANDOFF.md"), "note");
+    expect(runChanges(run)).toEqual({ commits: 0, files: 0 }); // cached for 15 s
+    expect(runChanges(run, { fresh: true })).toEqual({ commits: 1, files: 3 });
+    wgit("add", "a.txt"); wgit("commit", "-qm", "a"); // same file again must not double count
+    expect(runChanges(run, { fresh: true })).toEqual({ commits: 2, files: 3 });
+    rmSync(run.worktree, { recursive: true, force: true });
+    expect(runChanges(run, { fresh: true })).toBeNull();
+  });
+  it("finishes with worktree removal, keeping the branch", () => {
+    const a = createProfile({ name: "A", provider: "claude" });
+    const run = startRun({ profileId: a.id, repo, task: "t" });
+    const done = finishRun(run.id, { removeWorktree: true });
+    expect(done).toMatchObject({ status: "done", worktreeRemoved: true });
+    expect(done.warning).toBeUndefined();
+    expect(existsSync(run.worktree)).toBe(false);
+    expect(git("branch", "--list", run.branch)).toContain(run.branch);
+  });
+  it("keeps a shared worktree while another run is active, and warns on removal failure", () => {
+    const a = createProfile({ name: "A", provider: "claude" });
+    const b = createProfile({ name: "B", provider: "codex" });
+    const run = startRun({ profileId: a.id, repo, task: "t" });
+    const { run: next } = handOff(run.id, b.id);
+    const kept = finishRun(run.id, { removeWorktree: true });
+    expect(kept.warning).toMatch(/another active run/);
+    expect(existsSync(run.worktree)).toBe(true);
+    expect(getRun(run.id)?.worktreeRemoved).toBeUndefined();
+    // Make git fail: point the run at a repo that is not a git repository.
+    const bad = mkdtempSync(join(tmpdir(), "sw-notrepo-"));
+    const all = JSON.parse(readFileSync(join(process.env.SHIFTWELL_HOME!, "runs.json"), "utf8"));
+    writeFileSync(join(process.env.SHIFTWELL_HOME!, "runs.json"), JSON.stringify(all.map((r: any) => (r.id === next.id ? { ...r, repo: bad } : r))));
+    const failed = finishRun(next.id, { removeWorktree: true });
+    expect(failed.status).toBe("done");
+    expect(failed.warning).toMatch(/Could not remove/);
+    expect(existsSync(run.worktree)).toBe(true);
+  });
+  it("prunes active runs whose worktree is gone", () => {
+    const a = createProfile({ name: "A", provider: "claude" });
+    const gone = startRun({ profileId: a.id, repo, task: "gone" });
+    const kept = startRun({ profileId: a.id, repo, task: "kept" });
+    rmSync(gone.worktree, { recursive: true, force: true });
+    expect(pruneRuns()).toBe(1);
+    expect(getRun(gone.id)).toMatchObject({ status: "done" });
+    expect(getRun(gone.id)?.endedAt).toBeTruthy();
+    expect(getRun(kept.id)?.status).toBe("active");
+    expect(pruneRuns()).toBe(0);
   });
 });

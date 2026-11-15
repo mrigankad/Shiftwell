@@ -49,4 +49,33 @@ describe("daemon api", () => {
     expect((await app.inject({ method: "POST", url: "/api/profiles", payload: { name: "x", provider: "nope" } })).statusCode).toBe(400);
     expect((await app.inject({ method: "DELETE", url: "/api/profiles/missing" })).statusCode).toBe(404);
   });
+  it("reports run changes on the board, finishes with worktree removal, and prunes", async () => {
+    const { execFileSync } = await import("node:child_process");
+    const { writeFileSync, existsSync, rmSync } = await import("node:fs");
+    const repo = mkdtempSync(join(tmpdir(), "sw-repo-"));
+    const git = (...a: string[]) => execFileSync("git", a, { cwd: repo });
+    git("init", "-q"); git("config", "user.email", "t@t"); git("config", "user.name", "t");
+    writeFileSync(join(repo, "a.txt"), "x"); git("add", "."); git("commit", "-qm", "init");
+    const app = buildApp({ openTerminal: () => {} });
+    const a = (await app.inject({ method: "POST", url: "/api/profiles", payload: { name: "A", provider: "claude" } })).json();
+    const r1 = (await app.inject({ method: "POST", url: "/api/runs", payload: { profileId: a.id, repo, task: "one" } })).json();
+    const r2 = (await app.inject({ method: "POST", url: "/api/runs", payload: { profileId: a.id, repo, task: "two" } })).json();
+    writeFileSync(join(r1.worktree, "new.txt"), "n");
+    let board = (await app.inject({ url: "/api/board" })).json();
+    expect(board.runs.find((r: any) => r.id === r1.id).changes).toEqual({ commits: 0, files: 1 });
+    // finish r1 and remove its worktree; branch survives
+    const fin = await app.inject({ method: "POST", url: `/api/runs/${r1.id}/finish`, payload: { removeWorktree: true } });
+    expect(fin.statusCode).toBe(200);
+    expect(fin.json()).toMatchObject({ status: "done", worktreeRemoved: true });
+    expect(existsSync(r1.worktree)).toBe(false);
+    expect(execFileSync("git", ["branch", "--list", r1.branch], { cwd: repo, encoding: "utf8" })).toContain(r1.branch);
+    board = (await app.inject({ url: "/api/board" })).json();
+    expect(board.runs.find((r: any) => r.id === r1.id).changes).toEqual({ commits: 0, files: 1 }); // cached for non-active
+    // prune r2 after its folder vanished
+    rmSync(r2.worktree, { recursive: true, force: true });
+    const pruned = await app.inject({ method: "POST", url: "/api/runs/prune" });
+    expect(pruned.json()).toEqual({ pruned: 1 });
+    board = (await app.inject({ url: "/api/board" })).json();
+    expect(board.runs.find((r: any) => r.id === r2.id)).toMatchObject({ status: "done" });
+  });
 });

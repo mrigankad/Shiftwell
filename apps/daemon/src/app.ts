@@ -1,6 +1,6 @@
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,6 +8,7 @@ import {
   listProfiles, createProfile, removeProfile, getProfile, envFor, loginCommand,
   installClaudeStatusHook, installGeminiTelemetry, usageFor, suggestHandoffs, type Provider, type Usage,
   listRuns, startRun, handOff, finishRun, agentCommand, HANDOFF_PROMPT, readHandoffNote, readSamples,
+  runChanges, cachedRunChanges, pruneRuns,
 } from "@shiftwell/core";
 
 const PROVIDERS: Provider[] = ["claude", "codex", "gemini", "api"];
@@ -18,7 +19,7 @@ export function board() {
   return {
     generatedAt: new Date().toISOString(),
     accounts: profiles.map((p) => ({ ...p, usage: usage.get(p.id)!, loginCommand: loginCommand(p) })),
-    runs: listRuns().slice(-30).reverse(),
+    runs: listRuns().slice(-30).reverse().map((r) => ({ ...r, changes: r.status === "active" ? runChanges(r) : cachedRunChanges(r) })),
     suggestions: suggestHandoffs(profiles, usage).map((s) => ({ fromId: s.from.id, toId: s.to.id, from: s.from.name, to: s.to.name, reason: s.reason })),
   };
 }
@@ -74,8 +75,12 @@ export function buildApp(opts: { openTerminal?: typeof openLoginTerminal } = {})
   app.get("/api/runs", async () => listRuns());
 
   app.get<{ Params: { id: string } }>("/api/runs/:id/note", async (req, reply) => {
-    const note = readHandoffNote(req.params.id);
-    return note === null ? reply.code(404).send({ error: "This run did not start from a handoff" }) : { note };
+    const run = listRuns().find((r) => r.id === req.params.id);
+    if (!run?.fromRunId) return reply.code(404).send({ error: "This run did not start from a handoff" });
+    // Runs from before notes were archived only have the worktree copy.
+    let note = readHandoffNote(run.id);
+    if (note === null) { try { note = readFileSync(join(run.worktree, "HANDOFF.md"), "utf8"); } catch { /* gone */ } }
+    return note === null ? reply.code(404).send({ error: "The note for this handoff is no longer on disk" }) : { note };
   });
 
   app.get<{ Params: { id: string } }>("/api/profiles/:id/history", async (req, reply) => {
@@ -101,9 +106,14 @@ export function buildApp(opts: { openTerminal?: typeof openLoginTerminal } = {})
     } catch (e) { return fail(reply, e); }
   });
 
-  app.post<{ Params: { id: string } }>("/api/runs/:id/finish", async (req, reply) => {
-    try { return finishRun(req.params.id); } catch (e) { return fail(reply, e); }
+  // Body { removeWorktree?: boolean }. A failed worktree removal does not fail the request: the run is still
+  // marked done and the response carries a `warning` string explaining why the folder was kept.
+  app.post<{ Params: { id: string }; Body: { removeWorktree?: boolean } | undefined }>("/api/runs/:id/finish", async (req, reply) => {
+    try { return finishRun(req.params.id, { removeWorktree: req.body?.removeWorktree === true }); } catch (e) { return fail(reply, e); }
   });
+
+  // Marks active runs whose worktree folder no longer exists as done. Returns { pruned: n }.
+  app.post("/api/runs/prune", async () => ({ pruned: pruneRuns() }));
 
   app.post<{ Params: { id: string } }>("/api/runs/:id/open", async (req, reply) => {
     const run = listRuns().find((r) => r.id === req.params.id);

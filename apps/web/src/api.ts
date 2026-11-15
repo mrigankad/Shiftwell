@@ -8,6 +8,7 @@ export interface Account {
   provider: Provider;
   plan?: string;
   configDir: string;
+  createdAt?: string;
   loginCommand: string | null;
   usage: {
     latest: { at: string; fiveHour: Window | null; sevenDay: Window | null; daily?: Window | null; model?: string | null } | null;
@@ -21,6 +22,7 @@ export interface Suggestion { fromId: string; toId: string; from: string; to: st
 export interface Run {
   id: string; profileId: string; task: string; repo: string; worktree: string; branch: string;
   startedAt: string; endedAt?: string; status: "active" | "handed-off" | "done"; fromRunId?: string;
+  changes?: { commits: number; files: number } | null;
 }
 export interface Board { generatedAt: string; accounts: Account[]; runs: Run[]; suggestions: Suggestion[] }
 
